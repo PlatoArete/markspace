@@ -38,6 +38,7 @@ export interface WorkspaceState {
     setActiveFile: (index: number) => void;
     updateFileContent: (index: number, content: string) => void;
     setSidebarVisible: (visible: boolean) => void;
+    setSidebarWidth: (width: number) => void;
     markFileSaved: (index: number) => void;
 }
 
@@ -95,6 +96,8 @@ const startStore = createStore<WorkspaceState>((set) => ({
     }),
 
     setSidebarVisible: (visible) => set({ sidebarVisible: visible }),
+
+    setSidebarWidth: (width) => set({ sidebarWidth: width }),
 
     markFileSaved: (index) => set((state) => {
         const files = [...state.openFiles];

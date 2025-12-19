@@ -1,11 +1,67 @@
 <script lang="ts">
   import { workspaceStore, actions } from "$lib/workspace/state";
   import { fs } from "$lib/fs";
+  import { saveSession, loadSession } from "$lib/workspace/persistence";
   import FileTree from "../components/Sidebar/FileTree.svelte";
   import Editor from "../components/Editor/Editor.svelte";
   import TabBar from "../components/TabBar/TabBar.svelte";
+  import CommandPalette from "../components/CommandPalette/CommandPalette.svelte";
   import { onMount } from "svelte";
   import { loadConfig } from "$lib/workspace/config";
+
+  let showPalette = false;
+
+  function handleKeydown(e: KeyboardEvent) {
+    if ((e.metaKey || e.ctrlKey) && e.key === "p") {
+      e.preventDefault();
+      showPalette = !showPalette;
+    }
+    if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+      e.preventDefault();
+      const idx = $workspaceStore.activeFileIndex;
+      if (idx !== -1) saveContent(idx, $workspaceStore.openFiles[idx].content);
+    }
+  }
+  let persistTimeout: any;
+  workspaceStore.subscribe((state) => {
+    clearTimeout(persistTimeout);
+    persistTimeout = setTimeout(() => {
+      saveSession(state);
+    }, 1000);
+  });
+
+  onMount(async () => {
+    const saved = loadSession();
+    if (saved) {
+      actions.setSidebarVisible(saved.sidebarVisible);
+      actions.setSidebarWidth(saved.sidebarWidth);
+      if (saved.rootPath) {
+        const name = saved.rootPath.split(/[\\/]/).pop() || "Workspace";
+        actions.setRoot({ path: saved.rootPath, name });
+        loadConfig(saved.rootPath).then((config) => actions.setConfig(config));
+
+        for (const path of saved.openFilePaths) {
+          try {
+            const content = await fs.readFile(path);
+            const fname = path.split(/[\\/]/).pop() || "file";
+            actions.openFile({
+              path,
+              name: fname,
+              content,
+              savedContent: content,
+              scrollPosition: 0,
+              cursorPosition: 0,
+            });
+          } catch (e) {
+            console.error(`Failed to restore file ${path}`, e);
+          }
+        }
+        if (saved.activeFileIndex !== -1) {
+          actions.setActiveFile(saved.activeFileIndex);
+        }
+      }
+    }
+  });
 
   async function openFolder() {
     try {
@@ -80,7 +136,7 @@
   <div class="main-area">
     <TabBar />
     <div class="editor-area">
-      {#if $workspaceStore.activeFileIndex !== -1}
+      {#if $workspaceStore.activeFileIndex !== -1 && $workspaceStore.openFiles[$workspaceStore.activeFileIndex]}
         {#key $workspaceStore.openFiles[$workspaceStore.activeFileIndex].path}
           <!-- key block forces re-creation of editor when file changes, ensuring clean slate -->
           <!-- Or Editor handles updates. Editor.svelte handles props change. -->
@@ -101,7 +157,23 @@
       <span class="status-item">{saveStatus}</span>
     </div>
   </div>
+
+  <CommandPalette
+    bind:visible={showPalette}
+    on:close={() => (showPalette = false)}
+    on:command={(e) => {
+      if (e.detail === "save") {
+        const idx = $workspaceStore.activeFileIndex;
+        if (idx !== -1)
+          saveContent(idx, $workspaceStore.openFiles[idx].content);
+      } else if (e.detail === "openFolder") {
+        openFolder();
+      }
+    }}
+  />
 </div>
+
+<svelte:window on:keydown={handleKeydown} />
 
 <style>
   .status-bar {

@@ -19,7 +19,9 @@
     {#if file.content !== file.savedContent}
         <span class="dot">●</span>
     {/if}
-    <span class="close" on:click={close}>×</span>
+    <button class="close" on:click={close} title="Close Tab" type="button"
+        >×</button
+    >
 </div>
 
 <style>
@@ -55,9 +57,18 @@
     .close {
         opacity: 0;
         font-size: 1.2em;
-        line-height: 0.5;
+        line-height: normal;
         padding: 2px;
         border-radius: 4px;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: inherit;
+        width: 18px;
+        height: 18px;
     }
     .tab:hover .close {
         opacity: 1;
