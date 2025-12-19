@@ -21,6 +21,10 @@
       const idx = $workspaceStore.activeFileIndex;
       if (idx !== -1) saveContent(idx, $workspaceStore.openFiles[idx].content);
     }
+    if ((e.metaKey || e.ctrlKey) && e.key === "f") {
+      e.preventDefault();
+      // The CodeMirror keymap will handle showing the search panel
+    }
   }
   let persistTimeout: any;
   workspaceStore.subscribe((state) => {

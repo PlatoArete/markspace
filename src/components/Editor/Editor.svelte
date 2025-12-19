@@ -1,9 +1,11 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { EditorView } from "@codemirror/view";
+  import { EditorView, keymap } from "@codemirror/view";
+  import { Prec } from "@codemirror/state"; // Import Prec
   import { createEditorState } from "$lib/editor/setup";
   import type { WorkspaceConfig } from "$lib/workspace/config";
   import { workspaceStore } from "$lib/workspace/state";
+  import SearchPanel from "./SearchPanel.svelte";
 
   export let content: string;
   export let config: WorkspaceConfig = $workspaceStore.config;
@@ -11,6 +13,7 @@
 
   let container: HTMLDivElement;
   let view: EditorView;
+  let searchVisible = false;
 
   onMount(() => {
     const updateListener = EditorView.updateListener.of((update) => {
@@ -21,7 +24,23 @@
       }
     });
 
-    const state = createEditorState(content, config, [updateListener]);
+    const searchKeymapExtension = keymap.of([
+      {
+        key: "Mod-f",
+        run: () => {
+          searchVisible = true;
+          return true;
+        },
+      },
+    ]);
+
+    // Ensure our keymap has highest precedence override
+    const highPriKeymap = Prec.highest(searchKeymapExtension);
+
+    const state = createEditorState(content, config, [
+      updateListener,
+      highPriKeymap,
+    ]);
 
     view = new EditorView({
       state,
@@ -35,23 +54,51 @@
 
   // React to content changes from outside (e.g. switching tabs)
   $: if (view && content !== view.state.doc.toString()) {
+    // Re-create listener/state if content forces full reset
+    // Ideally we'd just update doc, but full reset is safer for MVP sync
     const updateListener = EditorView.updateListener.of((update) => {
       if (update.docChanged) {
         const newContent = update.state.doc.toString();
         onChange(newContent);
       }
     });
-    view.setState(createEditorState(content, config, [updateListener]));
+    // We need to re-attach the keymap here too if we fully reset state
+    const searchKeymapExtension = keymap.of([
+      {
+        key: "Mod-f",
+        run: () => {
+          searchVisible = true;
+          return true;
+        },
+      },
+    ]);
+
+    // Ensure our keymap has highest precedence override
+    const highPriKeymap = Prec.highest(searchKeymapExtension);
+
+    view.setState(
+      createEditorState(content, config, [
+        updateListener,
+        highPriKeymap,
+      ]),
+    );
   }
 </script>
 
 <div class="editor-container" bind:this={container}></div>
+
+<SearchPanel
+  {view}
+  bind:visible={searchVisible}
+  on:close={() => (searchVisible = false)}
+/>
 
 <style>
   .editor-container {
     height: 100%;
     width: 100%;
     overflow: hidden;
+    position: relative;
   }
   /* Ensure CodeMirror takes full height */
   :global(.cm-editor) {

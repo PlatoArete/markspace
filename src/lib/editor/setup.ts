@@ -1,37 +1,30 @@
 import { EditorState, type Extension } from '@codemirror/state';
 import { EditorView, keymap, lineNumbers, highlightActiveLineGutter } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
+import { searchKeymap, search } from '@codemirror/search';
 import { markdown } from '@codemirror/lang-markdown';
 import { oneDark } from '@codemirror/theme-one-dark';
 import type { WorkspaceConfig } from '$lib/workspace/config';
+import { baseTheme } from './theme';
 
 export function createEditorState(content: string, config: WorkspaceConfig, extraExtensions: Extension[] = []): EditorState {
     const extensions: Extension[] = [
         ...extraExtensions,
-        // Basics
         lineNumbers(),
         highlightActiveLineGutter(),
         history(),
-
-        // Language
         markdown(),
-
-        // Keymaps
+        history(),
+        markdown(),
+        search({ top: true, caseSensitive: false, literal: false }), // Ensure search state is enabled
+        baseTheme, // Our custom theme
         keymap.of([
             ...defaultKeymap,
             ...historyKeymap,
-            // Add more here (save, etc)
+            // ...searchKeymap // Disable default search keymap to prevent default panel
         ]),
-
-        // Theme (basic toggle for MVP, using oneDark if we needed a dark theme, but we should respect config)
-        // For MVP just standard light or oneDark based on config?
-        // Let's rely on CSS variables for main UI, but CodeMirror needs explicit theme extensions for syntax highlighting.
-        // We'll leave it default (light) for now or basic oneDark if 'dark'.
         config.theme?.colorScheme === 'dark' ? oneDark : [],
-
-        // Editor config
-        EditorView.lineWrapping, // default to wrap
-        EditorView.lineWrapping, // default to wrap
+        EditorView.lineWrapping
     ];
 
     return EditorState.create({
