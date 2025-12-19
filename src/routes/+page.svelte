@@ -1,156 +1,169 @@
 <script lang="ts">
-  import { invoke } from "@tauri-apps/api/core";
+  import { workspaceStore, actions } from "$lib/workspace/state";
+  import { fs } from "$lib/fs";
+  import FileTree from "../components/Sidebar/FileTree.svelte";
+  import Editor from "../components/Editor/Editor.svelte";
+  import TabBar from "../components/TabBar/TabBar.svelte";
+  import { onMount } from "svelte";
+  import { loadConfig } from "$lib/workspace/config";
 
-  let name = $state("");
-  let greetMsg = $state("");
-
-  async function greet(event: Event) {
-    event.preventDefault();
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    greetMsg = await invoke("greet", { name });
+  async function openFolder() {
+    try {
+      const handle = await fs.openFolder();
+      if (handle) {
+        actions.setRoot(handle);
+        // Load config if exists
+        const config = await loadConfig(handle.path);
+        actions.setConfig(config);
+      }
+    } catch (e) {
+      console.error("Open folder failed", e);
+    }
   }
+
+  function handleEditorChange(newContent: string) {
+    const idx = $workspaceStore.activeFileIndex;
+    if (idx !== -1) {
+      actions.updateFileContent(idx, newContent);
+      // TODO: Auto-save logic (Phase 1 auto-save requested)
+      // For now, let's just save automatically on change with debounce or just verify manual save first?
+      // Roadmap says "Auto-save with debounce".
+      // I'll implement simple debounce here or in store.
+      saveContent(idx, newContent);
+    }
+  }
+
+  let saveStatus = "Ready";
+  let saveTimeout: any; // NodeJS.Timeout or number
+
+  function saveContent(index: number, content: string) {
+    saveStatus = "Saving...";
+    console.log("Debouncing save for index", index);
+    clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(async () => {
+      console.log("Executing save for index", index);
+      const file = $workspaceStore.openFiles[index];
+      if (file) {
+        try {
+          await fs.writeFile(file.path, content);
+          actions.markFileSaved(index);
+          saveStatus = "Saved";
+          setTimeout(() => {
+            if (saveStatus === "Saved") saveStatus = "Ready";
+          }, 2000);
+        } catch (e: any) {
+          console.error("Save failed", e);
+          saveStatus = `Error: ${e.message || e}`;
+        }
+      }
+    }, 1000);
+  }
+
+  // Need to fix store layout to support markSaved
 </script>
 
-<main class="container">
-  <h1>Welcome to Tauri + Svelte</h1>
-
-  <div class="row">
-    <a href="https://vite.dev" target="_blank">
-      <img src="/vite.svg" class="logo vite" alt="Vite Logo" />
-    </a>
-    <a href="https://tauri.app" target="_blank">
-      <img src="/tauri.svg" class="logo tauri" alt="Tauri Logo" />
-    </a>
-    <a href="https://svelte.dev" target="_blank">
-      <img src="/svelte.svg" class="logo svelte-kit" alt="SvelteKit Logo" />
-    </a>
+<div class="app-container">
+  <div
+    class="sidebar"
+    style="width: {$workspaceStore.sidebarWidth}px"
+    class:hidden={!$workspaceStore.sidebarVisible}
+  >
+    <div class="sidebar-header">
+      <span>EXPLORER</span>
+      <button on:click={openFolder} class="icon-btn" title="Open Folder"
+        >📂</button
+      >
+    </div>
+    <FileTree />
   </div>
-  <p>Click on the Tauri, Vite, and SvelteKit logos to learn more.</p>
 
-  <form class="row" onsubmit={greet}>
-    <input id="greet-input" placeholder="Enter a name..." bind:value={name} />
-    <button type="submit">Greet</button>
-  </form>
-  <p>{greetMsg}</p>
-</main>
+  <div class="main-area">
+    <TabBar />
+    <div class="editor-area">
+      {#if $workspaceStore.activeFileIndex !== -1}
+        {#key $workspaceStore.openFiles[$workspaceStore.activeFileIndex].path}
+          <!-- key block forces re-creation of editor when file changes, ensuring clean slate -->
+          <!-- Or Editor handles updates. Editor.svelte handles props change. -->
+          <Editor
+            content={$workspaceStore.openFiles[$workspaceStore.activeFileIndex]
+              .content}
+            onChange={handleEditorChange}
+          />
+        {/key}
+      {:else}
+        <div class="empty-state">
+          <p>Open a folder to start writing</p>
+          <button on:click={openFolder}>Open Folder</button>
+        </div>
+      {/if}
+    </div>
+    <div class="status-bar">
+      <span class="status-item">{saveStatus}</span>
+    </div>
+  </div>
+</div>
 
 <style>
-.logo.vite:hover {
-  filter: drop-shadow(0 0 2em #747bff);
-}
-
-.logo.svelte-kit:hover {
-  filter: drop-shadow(0 0 2em #ff3e00);
-}
-
-:root {
-  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
-  font-size: 16px;
-  line-height: 24px;
-  font-weight: 400;
-
-  color: #0f0f0f;
-  background-color: #f6f6f6;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  -webkit-text-size-adjust: 100%;
-}
-
-.container {
-  margin: 0;
-  padding-top: 10vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  text-align: center;
-}
-
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: 0.75s;
-}
-
-.logo.tauri:hover {
-  filter: drop-shadow(0 0 2em #24c8db);
-}
-
-.row {
-  display: flex;
-  justify-content: center;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-
-a:hover {
-  color: #535bf2;
-}
-
-h1 {
-  text-align: center;
-}
-
-input,
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  color: #0f0f0f;
-  background-color: #ffffff;
-  transition: border-color 0.25s;
-  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
-}
-
-button {
-  cursor: pointer;
-}
-
-button:hover {
-  border-color: #396cd8;
-}
-button:active {
-  border-color: #396cd8;
-  background-color: #e8e8e8;
-}
-
-input,
-button {
-  outline: none;
-}
-
-#greet-input {
-  margin-right: 5px;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    color: #f6f6f6;
-    background-color: #2f2f2f;
+  .status-bar {
+    height: 22px;
+    background: var(--accent);
+    color: white;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
   }
-
-  a:hover {
-    color: #24c8db;
+  .status-item {
+    margin-right: 15px;
   }
-
-  input,
-  button {
-    color: #ffffff;
-    background-color: #0f0f0f98;
+  .app-container {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+    background: var(--bg-primary);
   }
-  button:active {
-    background-color: #0f0f0f69;
+  .sidebar {
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-secondary);
   }
-}
-
+  .sidebar.hidden {
+    display: none;
+  }
+  .sidebar-header {
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: var(--text-secondary);
+  }
+  .main-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .editor-area {
+    flex: 1;
+    position: relative;
+    min-height: 0;
+  }
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-secondary);
+  }
+  .icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2em;
+  }
 </style>

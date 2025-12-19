@@ -1,0 +1,61 @@
+export interface WorkspaceConfig {
+    theme?: ThemeOverrides;
+    editor?: EditorOverrides;
+    ignore?: string[];
+}
+
+export interface ThemeOverrides {
+    fontFamily?: string;
+    fontSize?: number;
+    lineHeight?: number;
+    colorScheme?: 'light' | 'dark' | 'sepia' | 'custom';
+    customColors?: Record<string, string>;
+}
+
+export interface EditorOverrides {
+    tabSize?: number;
+    wordWrap?: boolean;
+    lineNumbers?: boolean;
+    focusMode?: boolean;
+}
+
+export const DEFAULT_CONFIG: WorkspaceConfig = {
+    theme: {
+        fontSize: 14,
+        lineHeight: 1.5,
+        colorScheme: 'light'
+    },
+    editor: {
+        tabSize: 2,
+        wordWrap: true,
+        lineNumbers: false
+    },
+    ignore: ['node_modules', '.git', '.DS_Store']
+};
+
+import { fs } from '$lib/fs';
+
+export async function loadConfig(rootPath: string): Promise<WorkspaceConfig> {
+    const configPath = `${rootPath}/.markspace/config.json`;
+    try {
+        if (await fs.exists(configPath)) {
+            const content = await fs.readFile(configPath);
+            const userConfig = JSON.parse(content);
+            // Deep merge logic would go here. For now, shallow merge top level or just return userConfig with defaults.
+            return {
+                ...DEFAULT_CONFIG,
+                ...userConfig, // simplified
+                theme: { ...DEFAULT_CONFIG.theme, ...userConfig.theme },
+                editor: { ...DEFAULT_CONFIG.editor, ...userConfig.editor }
+            };
+        }
+    } catch (e) {
+        console.warn('Failed to load config:', e);
+    }
+    return DEFAULT_CONFIG;
+}
+
+export async function saveConfig(rootPath: string, config: WorkspaceConfig): Promise<void> {
+    const configPath = `${rootPath}/.markspace/config.json`;
+    await fs.writeFile(configPath, JSON.stringify(config, null, 2));
+}
