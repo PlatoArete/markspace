@@ -40,6 +40,11 @@ export interface WorkspaceState {
     setSidebarVisible: (visible: boolean) => void;
     setSidebarWidth: (width: number) => void;
     markFileSaved: (index: number) => void;
+    renameOpenFile: (oldPath: string, newPath: string, newName: string) => void;
+    closeFileByPath: (path: string) => void;
+    closeAllFiles: () => void;
+    closeOtherFiles: (keepIndex: number) => void;
+    moveOpenFiles: (fromIndex: number, toIndex: number) => void;
 }
 
 const startStore = createStore<WorkspaceState>((set) => ({
@@ -105,6 +110,63 @@ const startStore = createStore<WorkspaceState>((set) => ({
             files[index] = { ...files[index], savedContent: files[index].content };
         }
         return { openFiles: files };
+    }),
+
+    renameOpenFile: (oldPath: string, newPath: string, newName: string) => set((state) => {
+        const files = state.openFiles.map(f => {
+            if (f.path === oldPath) {
+                return { ...f, path: newPath, name: newName };
+            }
+            return f;
+        });
+        return { openFiles: files };
+    }),
+
+    closeFileByPath: (path: string) => set((state) => {
+        const index = state.openFiles.findIndex(f => f.path === path);
+        if (index !== -1) {
+            // Re-use logic from closeFile via self-call? 
+            // Zustand setters are synchronous. We can just copy the logic or call a helper if extracted.
+            // Copying logic for simplicity and to avoid 'this' binding issues in simple object.
+            const newFiles = [...state.openFiles];
+            newFiles.splice(index, 1);
+
+            let newIndex = state.activeFileIndex;
+            if (newFiles.length === 0) {
+                newIndex = -1;
+            } else if (index <= state.activeFileIndex) {
+                newIndex = Math.max(0, state.activeFileIndex - 1);
+            }
+            return { openFiles: newFiles, activeFileIndex: newIndex };
+        }
+        return {};
+    }),
+
+    closeAllFiles: () => set({ openFiles: [], activeFileIndex: -1 }),
+
+    closeOtherFiles: (keepIndex: number) => set((state) => {
+        const fileToKeep = state.openFiles[keepIndex];
+        if (!fileToKeep) return { openFiles: state.openFiles }; // Return original if invalid
+        return { openFiles: [fileToKeep], activeFileIndex: 0 };
+    }),
+
+    moveOpenFiles: (fromIndex: number, toIndex: number) => set((state) => {
+        if (fromIndex === toIndex) return {};
+        const newFiles = [...state.openFiles];
+        const [movedFile] = newFiles.splice(fromIndex, 1);
+        newFiles.splice(toIndex, 0, movedFile);
+
+        // Update active index if needed
+        let newActiveIndex = state.activeFileIndex;
+        if (state.activeFileIndex === fromIndex) {
+            newActiveIndex = toIndex;
+        } else if (state.activeFileIndex > fromIndex && state.activeFileIndex <= toIndex) {
+            newActiveIndex--;
+        } else if (state.activeFileIndex < fromIndex && state.activeFileIndex >= toIndex) {
+            newActiveIndex++;
+        }
+
+        return { openFiles: newFiles, activeFileIndex: newActiveIndex };
     })
 }));
 

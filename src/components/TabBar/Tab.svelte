@@ -7,14 +7,71 @@
 
     const dispatch = createEventDispatcher();
 
+    let isDragOver = false;
+
     function close(e: MouseEvent) {
         e.stopPropagation();
         dispatch("close");
     }
+
+    function handleContextMenu(e: MouseEvent) {
+        e.stopPropagation(); // Prevent event from bubbling to document
+        dispatch("contextmenu", e);
+    }
+
+    function handleDragStart(e: DragEvent) {
+        if (e.dataTransfer) {
+            e.dataTransfer.effectAllowed = "move";
+            e.dataTransfer.setData("text/plain", "tab"); // Firefox requires data
+        }
+        dispatch("dragstart", e);
+    }
+
+    function handleDragEnter(e: DragEvent) {
+        e.preventDefault();
+        isDragOver = true;
+    }
+
+    function handleDragOver(e: DragEvent) {
+        e.preventDefault(); // Allow drop
+        if (e.dataTransfer) {
+            e.dataTransfer.dropEffect = "move";
+        }
+    }
+
+    function handleDragLeave(e: DragEvent) {
+        isDragOver = false;
+    }
+
+    function handleDrop(e: DragEvent) {
+        e.preventDefault();
+        e.stopPropagation(); // Prevent bubbling to container
+        isDragOver = false;
+        dispatch("drop", e);
+    }
+
+    function handleDragEnd(e: DragEvent) {
+        dispatch("dragend", e);
+    }
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
-<div class="tab" class:active on:click role="button" tabindex="0">
+<div
+    class="tab"
+    class:active
+    class:drag-over={isDragOver}
+    draggable="true"
+    on:click
+    on:contextmenu|preventDefault={handleContextMenu}
+    on:dragstart={handleDragStart}
+    on:dragenter={handleDragEnter}
+    on:dragover={handleDragOver}
+    on:dragleave={handleDragLeave}
+    on:drop={handleDrop}
+    on:dragend={handleDragEnd}
+    role="button"
+    tabindex="0"
+>
     <span class="name">{file.name}</span>
     {#if file.content !== file.savedContent}
         <span class="dot">●</span>
@@ -37,6 +94,8 @@
         max-width: 200px;
         min-width: 100px;
         height: 35px;
+        -webkit-app-region: no-drag;
+        app-region: no-drag;
     }
     .tab.active {
         background: var(--bg-primary);
@@ -75,5 +134,9 @@
     }
     .close:hover {
         background: rgba(0, 0, 0, 0.1);
+    }
+    .drag-over {
+        background: rgba(128, 128, 128, 0.2);
+        border-left: 2px solid var(--accent);
     }
 </style>
