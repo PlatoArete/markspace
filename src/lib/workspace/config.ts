@@ -9,6 +9,9 @@ export interface ThemeOverrides {
     fontSize?: number;
     lineHeight?: number;
     colorScheme?: 'light' | 'dark' | 'sepia' | 'custom';
+    accentColor?: string;
+    interfaceFont?: string;
+    editorFont?: string;
     customColors?: Record<string, string>;
 }
 
@@ -23,7 +26,9 @@ export const DEFAULT_CONFIG: WorkspaceConfig = {
     theme: {
         fontSize: 14,
         lineHeight: 1.5,
-        colorScheme: 'light'
+        colorScheme: 'light',
+        accentColor: '#e5a84b', // Amber default
+        interfaceFont: 'Inter'
     },
     editor: {
         tabSize: 2,
@@ -56,6 +61,14 @@ export async function loadConfig(rootPath: string): Promise<WorkspaceConfig> {
 }
 
 export async function saveConfig(rootPath: string, config: WorkspaceConfig): Promise<void> {
-    const configPath = `${rootPath}/.markspace/config.json`;
-    await fs.writeFile(configPath, JSON.stringify(config, null, 2));
+    const dirPath = `${rootPath}/.markspace`;
+    const configPath = `${dirPath}/config.json`;
+    try {
+        if (!(await fs.exists(dirPath))) {
+            await fs.createDirectory(dirPath);
+        }
+        await fs.writeFile(configPath, JSON.stringify(config, null, 2));
+    } catch (e) {
+        console.error("Failed to save config", e);
+    }
 }

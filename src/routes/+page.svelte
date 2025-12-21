@@ -96,6 +96,38 @@
     persistTimeout = setTimeout(() => {
       saveSession(state);
     }, 1000);
+
+    // Apply Theme Overrides
+    if (state.config.theme) {
+      const root = document.documentElement;
+      if (state.config.theme.accentColor) {
+        root.style.setProperty("--accent", state.config.theme.accentColor);
+        // Simple hover variant generator (just same for now, or use css-color-function if added)
+        // root.style.setProperty('--accent-hover', state.config.theme.accentColor);
+      }
+      if (state.config.theme.interfaceFont) {
+        // Apply to body? or just a var
+        // root.style.setProperty('--font-interface', state.config.theme.interfaceFont);
+        // Updating body font family directly or via var mapping
+        document.body.style.fontFamily = `${state.config.theme.interfaceFont}, system-ui, sans-serif`;
+      }
+      if (state.config.theme.colorScheme) {
+        root.setAttribute("data-theme", state.config.theme.colorScheme);
+      } else {
+        root.setAttribute("data-theme", "light");
+      }
+      if (state.config.theme.editorFont) {
+        root.style.setProperty("--font-editor", state.config.theme.editorFont);
+      }
+      if (state.config.theme.fontSize) {
+        root.style.setProperty(
+          "--editor-font-size",
+          `${state.config.theme.fontSize}px`,
+        );
+      } else {
+        root.style.setProperty("--editor-font-size", "14px");
+      }
+    }
   });
 
   onMount(async () => {
@@ -310,6 +342,7 @@
             cursorPosition={$workspaceStore.openFiles[
               $workspaceStore.activeFileIndex
             ].cursorPosition}
+            config={$workspaceStore.config}
             onChange={handleEditorChange}
           />
         {/key}

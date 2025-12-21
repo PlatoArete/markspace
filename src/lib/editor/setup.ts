@@ -1,5 +1,11 @@
 import { EditorState, type Extension } from '@codemirror/state';
-import { EditorView, keymap, lineNumbers, highlightActiveLineGutter } from '@codemirror/view';
+import {
+    EditorView,
+    keymap,
+    type KeyBinding,
+    highlightActiveLineGutter,
+    highlightActiveLine,
+} from "@codemirror/view";
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { search, highlightSelectionMatches } from '@codemirror/search';
 import { markdown } from '@codemirror/lang-markdown';
@@ -10,8 +16,8 @@ import { editorTheme } from './theme';
 export function createEditorState(content: string, config: WorkspaceConfig, extraExtensions: Extension[] = []): EditorState {
     const extensions: Extension[] = [
         ...extraExtensions,
-        lineNumbers(),
         highlightActiveLineGutter(),
+        highlightActiveLine(),
         history(),
         markdown(),
         search({ top: true }), // Include search with panel (we'll hide the panel via CSS)
@@ -22,8 +28,6 @@ export function createEditorState(content: string, config: WorkspaceConfig, extr
             ...historyKeymap,
             // ...searchKeymap // Disable default search keymap to prevent default panel
         ]),
-        config.theme?.colorScheme === 'dark' ? oneDark : [],
-        EditorView.lineWrapping
     ];
 
     return EditorState.create({

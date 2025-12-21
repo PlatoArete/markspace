@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { EditorView, keymap } from "@codemirror/view";
+  import { EditorView, keymap, lineNumbers } from "@codemirror/view";
   import { Prec, Compartment, EditorSelection } from "@codemirror/state";
   import { createEditorState } from "$lib/editor/setup";
   import type { WorkspaceConfig } from "$lib/workspace/config";
@@ -9,6 +9,7 @@
   import { livePreviewPlugin } from "$lib/editor/live-preview";
   import { markdown } from "@codemirror/lang-markdown";
   import { editorTheme } from "$lib/editor/theme";
+  import { customSyntaxHighlighting } from "$lib/editor/highlight";
 
   export let content: string;
   export let config: WorkspaceConfig = $workspaceStore.config;
@@ -21,19 +22,6 @@
   let searchReplaceMode = false;
   let activeSearchText = "";
   let lastSearchText = "";
-
-  // Compartment for live preview plugin
-  let livePreviewCompartment = new Compartment();
-
-  // Reactively update live preview from store
-  $: livePreviewEnabled = $workspaceStore.livePreviewEnabled;
-  $: if (view) {
-    view.dispatch({
-      effects: livePreviewCompartment.reconfigure(
-        livePreviewEnabled ? livePreviewPlugin : [],
-      ),
-    });
-  }
 
   function jumpToCursor(pos: number) {
     if (!view) return;
@@ -197,7 +185,6 @@
     const changes = view.state.changeByRange((range) => {
       const content = view.state.sliceDoc(range.from, range.to);
       const fence = "```";
-      // Simple wrap for now, smart checking for existing fence is complex
       const insert = `${fence}\n${content}\n${fence}`;
       return {
         range: EditorSelection.range(
@@ -210,6 +197,31 @@
     view.dispatch(changes);
     return true;
   }
+
+  // Compartments for dynamic settings
+  let livePreviewCompartment = new Compartment();
+  let lineNumbersCompartment = new Compartment();
+  let wordWrapCompartment = new Compartment();
+
+  // Reactive updates for settings
+  $: livePreviewEnabled = $workspaceStore.livePreviewEnabled;
+  $: if (view) {
+    view.dispatch({
+      effects: [
+        livePreviewCompartment.reconfigure(
+          livePreviewEnabled ? livePreviewPlugin : [],
+        ),
+        lineNumbersCompartment.reconfigure(
+          config.editor?.lineNumbers ? lineNumbers() : [],
+        ),
+        wordWrapCompartment.reconfigure(
+          config.editor?.wordWrap ? EditorView.lineWrapping : [],
+        ),
+      ],
+    });
+  }
+
+  // ...(existing methods)...
 
   onMount(() => {
     const updateListener = EditorView.updateListener.of((update) => {
@@ -283,18 +295,20 @@
 
     const highPriKeymap = Prec.highest(searchKeymapExtension);
 
-    // Initial extensions including live preview
+    // Initial extensions
     const initialExtensions = [
       updateListener,
       highPriKeymap,
       livePreviewCompartment.of(
         $workspaceStore.livePreviewEnabled ? livePreviewPlugin : [],
       ),
-      EditorView.contentAttributes.of({
-        spellcheck: "true",
-        autocorrect: "on",
-        autocapitalize: "on",
-      }),
+      lineNumbersCompartment.of(
+        config.editor?.lineNumbers ? lineNumbers() : [],
+      ),
+      wordWrapCompartment.of(
+        config.editor?.wordWrap ? EditorView.lineWrapping : [],
+      ),
+      customSyntaxHighlighting, // Use our variable-based highlighting
     ];
 
     const state = createEditorState(content, config, initialExtensions);
@@ -303,7 +317,7 @@
       state,
       parent: container,
     });
-
+    // ...
     if (cursorPosition !== undefined) {
       jumpToCursor(cursorPosition);
     }

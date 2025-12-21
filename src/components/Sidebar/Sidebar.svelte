@@ -3,10 +3,10 @@
     import { fs } from "$lib/fs";
     import { loadConfig } from "$lib/workspace/config";
     import FileTree from "./FileTree.svelte";
-    import SidebarSearch from "./SidebarSearch.svelte"; // We'll create this next
+    import SidebarSearch from "./SidebarSearch.svelte";
     import QuickLinks from "./QuickLinks.svelte";
-    import { Files, Search, FolderOpen } from "lucide-svelte";
-
+    import SidebarSettings from "./SidebarSettings.svelte";
+    import { Files, Search, FolderOpen, Settings } from "lucide-svelte";
     import ContextMenu from "../ContextMenu/ContextMenu.svelte";
     import Modal from "../UI/Modal.svelte";
     import type { Entry } from "$lib/fs/interface";
@@ -15,7 +15,7 @@
     export let visible: boolean;
     export let isResizing = false;
 
-    let activeTab: "files" | "search" = "files";
+    let activeTab: "files" | "search" | "settings" = "files";
 
     let menuVisible = false;
     let menuX = 0;
@@ -275,6 +275,13 @@
             >
                 <Search size={18} />
             </button>
+            <button
+                class:active={activeTab === "settings"}
+                on:click={() => (activeTab = "settings")}
+                title="Settings"
+            >
+                <Settings size={18} />
+            </button>
         </div>
         {#if activeTab === "files"}
             <button on:click={openFolder} class="icon-btn" title="Open Folder">
@@ -296,8 +303,10 @@
                     {dirtyPaths}
                 />
             {/key}
-        {:else}
+        {:else if activeTab === "search"}
             <SidebarSearch />
+        {:else if activeTab === "settings"}
+            <SidebarSettings />
         {/if}
     </div>
 

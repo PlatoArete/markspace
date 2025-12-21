@@ -19,18 +19,38 @@
   font-family: Inter, system-ui, -apple-system, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg-primary: #1a1a1a;
-    --bg-secondary: #252525;
-    --text-primary: #e0e0e0;
-    --text-secondary: #a0a0a0;
-    --accent: #e5a84b;
-    --accent-hover: #c79241;
-    --border: #333333;
-    --accent-hover: #ffffff;
-    --error: #ff5252;
-  }
+
+[data-theme="dark"] {
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #252525;
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --accent: #e5a84b;
+  --accent-hover: #c79241;
+  --border: #333333;
+  --accent-hover: #ffffff;
+  --error: #ff5252;
+}
+
+[data-theme="dark-light"] {
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #252525;
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --accent: #e5a84b;
+  --accent-hover: #c79241;
+  --border: #333333;
+  --accent-hover: #ffffff;
+  --error: #ff5252;
+}
+
+[data-theme="dark-light"] .editor-area {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  /* Light mode secondary for gutters */
+  --text-primary: #1a1a1a;
+  --text-secondary: #666666;
+  --border: #e0e0e0;
 }
 
 /* Live Preview Styles */
@@ -57,6 +77,11 @@
   padding-bottom: 0.2em;
 }
 
+.cm-content {
+  font-family: var(--font-editor, 'JetBrains Mono'), monospace !important;
+  font-size: var(--editor-font-size, 14px);
+}
+
 .cm-bold {
   font-weight: bold;
 }
@@ -67,7 +92,7 @@
 
 /* Inline Code */
 .cm-inline-code {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-editor, 'JetBrains Mono'), monospace;
   background: rgba(128, 128, 128, 0.15);
   padding: 2px 4px;
   border-radius: 4px;
@@ -76,7 +101,7 @@
 }
 
 .cm-code-block-line {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-editor, 'JetBrains Mono'), monospace;
   background: rgba(128, 128, 128, 0.05);
   /* Slightly lighter/different than inline? Or same? */
   color: var(--accent);
@@ -132,6 +157,28 @@ body {
   height: 100vh;
   width: 100vw;
   overflow: hidden;
+}
+
+/* Cursor Blink & Style */
+.cm-cursor {
+  border-left-width: 2px !important;
+  /* Make it slightly thicker as requested "hard to see" */
+  animation: cm-blink 0.5s step-end infinite alternate !important;
+}
+
+@keyframes cm-blink {
+  0% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Ensure Active Line is visible but subtle */
+.cm-activeLine {
+  background-color: rgba(100, 100, 100, 0.1) !important;
 }
 
 * {
