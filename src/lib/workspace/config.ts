@@ -40,24 +40,24 @@ export const DEFAULT_CONFIG: WorkspaceConfig = {
 
 import { fs } from '$lib/fs';
 
-export async function loadConfig(rootPath: string): Promise<WorkspaceConfig> {
+export async function loadConfig(rootPath: string, baseConfig: WorkspaceConfig = DEFAULT_CONFIG): Promise<WorkspaceConfig> {
     const configPath = `${rootPath}/.markspace/config.json`;
     try {
         if (await fs.exists(configPath)) {
             const content = await fs.readFile(configPath);
             const userConfig = JSON.parse(content);
-            // Deep merge logic would go here. For now, shallow merge top level or just return userConfig with defaults.
+            // Deep merge logic
             return {
-                ...DEFAULT_CONFIG,
-                ...userConfig, // simplified
-                theme: { ...DEFAULT_CONFIG.theme, ...userConfig.theme },
-                editor: { ...DEFAULT_CONFIG.editor, ...userConfig.editor }
+                ...baseConfig,
+                ...userConfig,
+                theme: { ...baseConfig.theme, ...userConfig.theme },
+                editor: { ...baseConfig.editor, ...userConfig.editor }
             };
         }
     } catch (e) {
         console.warn('Failed to load config:', e);
     }
-    return DEFAULT_CONFIG;
+    return baseConfig;
 }
 
 export async function saveConfig(rootPath: string, config: WorkspaceConfig): Promise<void> {

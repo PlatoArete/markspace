@@ -228,8 +228,10 @@
     .tabs-scroll {
         display: flex;
         overflow-x: auto;
+        overflow-y: hidden; /* Prevent vertical scrollbar artifact */
         flex-grow: 1;
         height: 100%;
+        scrollbar-width: none; /* Firefox */
     }
 
     .tab-spacer {
@@ -238,10 +240,7 @@
     }
 
     .tabs-scroll::-webkit-scrollbar {
-        height: 4px;
-    }
-    .tabs-scroll::-webkit-scrollbar-thumb {
-        background: rgba(0, 0, 0, 0.2);
+        display: none; /* Hide scrollbar for clean look */
     }
 
     .toggle-btn {
@@ -254,8 +253,11 @@
         display: flex;
         align-items: center;
         opacity: 0.7;
-        transition: opacity 0.2s;
-        border-left: 1px solid var(--border);
+        transition:
+            opacity 0.2s,
+            color 0.2s;
+        /* border-left: 1px solid var(--border); removed as per request */
+        color: var(--text-secondary);
     }
     .left-btn {
         border-left: none;
@@ -264,5 +266,6 @@
     .toggle-btn:hover {
         opacity: 1;
         background: rgba(0, 0, 0, 0.05);
+        color: var(--text-primary);
     }
 </style>

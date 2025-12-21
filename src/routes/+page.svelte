@@ -7,7 +7,7 @@
   import TabBar from "../components/TabBar/TabBar.svelte";
   import CommandPalette from "../components/CommandPalette/CommandPalette.svelte";
   import { onMount } from "svelte";
-  import { loadConfig } from "$lib/workspace/config";
+  import { loadConfig, DEFAULT_CONFIG } from "$lib/workspace/config";
 
   let showPalette = false;
 
@@ -138,7 +138,17 @@
       if (saved.rootPath) {
         const name = saved.rootPath.split(/[\\/]/).pop() || "Workspace";
         actions.setRoot({ path: saved.rootPath, name });
-        loadConfig(saved.rootPath).then((config) => actions.setConfig(config));
+        // Use persisted theme as base
+        const baseConfig = DEFAULT_CONFIG;
+        if (saved.themePreferences) {
+          baseConfig.theme = {
+            ...DEFAULT_CONFIG.theme,
+            ...saved.themePreferences,
+          };
+        }
+        loadConfig(saved.rootPath, baseConfig).then((config) =>
+          actions.setConfig(config),
+        );
 
         // Restore files with their dirty state content
         if (saved.openFiles && saved.openFiles.length > 0) {
@@ -209,8 +219,17 @@
       const handle = await fs.openFolder();
       if (handle) {
         actions.setRoot(handle);
-        // Load config if exists
-        const config = await loadConfig(handle.path);
+        // Load config if exists, using current theme as base to persist it
+        const currentConfig = $workspaceStore.config;
+        const baseConfig = DEFAULT_CONFIG;
+        // If we have a current theme, carry it over
+        if (currentConfig.theme) {
+          baseConfig.theme = {
+            ...DEFAULT_CONFIG.theme,
+            ...currentConfig.theme,
+          };
+        }
+        const config = await loadConfig(handle.path, baseConfig);
         actions.setConfig(config);
       }
     } catch (e) {
