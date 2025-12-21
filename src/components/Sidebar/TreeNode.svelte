@@ -36,6 +36,17 @@
         // Bubble up
         dispatch("open", e.detail);
     }
+
+    function handleContextMenu(e: MouseEvent) {
+        // Dispatch with original event for coordinates
+        dispatch("contextmenu", { originalEvent: e, entry });
+    }
+
+    function handleChildContextMenu(
+        e: CustomEvent<{ originalEvent: MouseEvent; entry: Entry }>,
+    ) {
+        dispatch("contextmenu", e.detail);
+    }
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events(we'll add keyboard support later) -->
@@ -43,6 +54,7 @@
     class="node"
     style="padding-left: {depth * 12 + 12}px"
     on:click|stopPropagation={toggleExpand}
+    on:contextmenu|preventDefault|stopPropagation={handleContextMenu}
     role="button"
     tabindex="0"
 >
@@ -67,10 +79,10 @@
             </div>
         {:else}
             {#each children as child}
-                <svelte:self
-                    entry={child}
-                    depth={depth + 1}
-                    on:open={handleOpen}
+                entry={child}
+                depth={depth + 1}
+                on:open={handleOpen}
+                on:contextmenu={handleChildContextMenu}
                 />
             {/each}
         {/if}

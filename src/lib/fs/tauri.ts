@@ -1,5 +1,5 @@
 import { open } from '@tauri-apps/plugin-dialog';
-import { readTextFile, writeTextFile, remove, exists, readDir, watch } from '@tauri-apps/plugin-fs';
+import { readTextFile, writeTextFile, remove, exists, readDir, watch, rename, mkdir } from '@tauri-apps/plugin-fs';
 import type { WorkspaceFS, FolderHandle, Entry, FSEvent, Unsubscribe } from './interface';
 
 export class TauriFS implements WorkspaceFS {
@@ -87,10 +87,6 @@ export class TauriFS implements WorkspaceFS {
             // Let's assume generic modification for now.
             // TODO: Strict mapping
             const type = 'modify'; // simplified
-            /*
-            if (typeof event.type === 'object' && 'modify' in event.type) type = 'modify';
-            else if (typeof event.type === 'object' && 'remove' in event.type) type = 'delete';
-            */
             callback({
                 type,
                 path: path // strictly it should be the changed file path, but the watcher might return that in payload
@@ -98,5 +94,13 @@ export class TauriFS implements WorkspaceFS {
         }, { recursive: true });
 
         return unlisten;
+    }
+
+    async renamePath(oldPath: string, newPath: string): Promise<void> {
+        await rename(oldPath, newPath);
+    }
+
+    async createDirectory(path: string): Promise<void> {
+        await mkdir(path);
     }
 }

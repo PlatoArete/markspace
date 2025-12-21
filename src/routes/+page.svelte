@@ -2,7 +2,7 @@
   import { workspaceStore, actions } from "$lib/workspace/state";
   import { fs } from "$lib/fs";
   import { saveSession, loadSession } from "$lib/workspace/persistence";
-  import FileTree from "../components/Sidebar/FileTree.svelte";
+  import Sidebar from "../components/Sidebar/Sidebar.svelte";
   import Editor from "../components/Editor/Editor.svelte";
   import TabBar from "../components/TabBar/TabBar.svelte";
   import CommandPalette from "../components/CommandPalette/CommandPalette.svelte";
@@ -85,10 +85,6 @@
     const idx = $workspaceStore.activeFileIndex;
     if (idx !== -1) {
       actions.updateFileContent(idx, newContent);
-      // TODO: Auto-save logic (Phase 1 auto-save requested)
-      // For now, let's just save automatically on change with debounce or just verify manual save first?
-      // Roadmap says "Auto-save with debounce".
-      // I'll implement simple debounce here or in store.
       saveContent(idx, newContent);
     }
   }
@@ -98,10 +94,10 @@
 
   function saveContent(index: number, content: string) {
     saveStatus = "Saving...";
-    console.log("Debouncing save for index", index);
+    // console.log("Debouncing save for index", index);
     clearTimeout(saveTimeout);
     saveTimeout = setTimeout(async () => {
-      console.log("Executing save for index", index);
+      // console.log("Executing save for index", index);
       const file = $workspaceStore.openFiles[index];
       if (file) {
         try {
@@ -118,24 +114,13 @@
       }
     }, 1000);
   }
-
-  // Need to fix store layout to support markSaved
 </script>
 
 <div class="app-container">
-  <div
-    class="sidebar"
-    style="width: {$workspaceStore.sidebarWidth}px"
-    class:hidden={!$workspaceStore.sidebarVisible}
-  >
-    <div class="sidebar-header">
-      <span>EXPLORER</span>
-      <button on:click={openFolder} class="icon-btn" title="Open Folder"
-        >📂</button
-      >
-    </div>
-    <FileTree />
-  </div>
+  <Sidebar
+    width={$workspaceStore.sidebarWidth}
+    visible={$workspaceStore.sidebarVisible}
+  />
 
   <div class="main-area">
     <TabBar />
@@ -143,10 +128,12 @@
       {#if $workspaceStore.activeFileIndex !== -1 && $workspaceStore.openFiles[$workspaceStore.activeFileIndex]}
         {#key $workspaceStore.openFiles[$workspaceStore.activeFileIndex].path}
           <!-- key block forces re-creation of editor when file changes, ensuring clean slate -->
-          <!-- Or Editor handles updates. Editor.svelte handles props change. -->
           <Editor
             content={$workspaceStore.openFiles[$workspaceStore.activeFileIndex]
               .content}
+            cursorPosition={$workspaceStore.openFiles[
+              $workspaceStore.activeFileIndex
+            ].cursorPosition}
             onChange={handleEditorChange}
           />
         {/key}
@@ -198,24 +185,6 @@
     width: 100vw;
     background: var(--bg-primary);
   }
-  .sidebar {
-    border-right: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    background: var(--bg-secondary);
-  }
-  .sidebar.hidden {
-    display: none;
-  }
-  .sidebar-header {
-    padding: 10px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.8rem;
-    font-weight: bold;
-    color: var(--text-secondary);
-  }
   .main-area {
     flex: 1;
     display: flex;
@@ -235,11 +204,5 @@
     justify-content: center;
     height: 100%;
     color: var(--text-secondary);
-  }
-  .icon-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 1.2em;
   }
 </style>

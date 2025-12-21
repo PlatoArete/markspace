@@ -25,6 +25,15 @@
         }
     }
 
+    import { createEventDispatcher } from "svelte";
+    const dispatch = createEventDispatcher();
+
+    function handleContextMenu(
+        e: CustomEvent<{ originalEvent: MouseEvent; entry: Entry }>,
+    ) {
+        dispatch("itemcontextmenu", e.detail);
+    }
+
     async function openFile(entry: Entry) {
         try {
             const content = await fs.readFile(entry.path);
@@ -63,9 +72,31 @@
 
 <div class="file-tree">
     {#if $workspaceStore.root}
-        <div class="header">{$workspaceStore.root.name}</div>
+        <div class="header">
+            <span>{$workspaceStore.root.name}</span>
+            <div class="actions">
+                <button
+                    class="action-btn"
+                    title="New File"
+                    on:click={() => dispatch("newfile", $workspaceStore.root)}
+                >
+                    📝
+                </button>
+                <button
+                    class="action-btn"
+                    title="New Folder"
+                    on:click={() => dispatch("newfolder", $workspaceStore.root)}
+                >
+                    📁
+                </button>
+            </div>
+        </div>
         {#each rootEntries as entry}
-            <TreeNode {entry} on:open={handleOpen} />
+            <TreeNode
+                {entry}
+                on:open={handleOpen}
+                on:contextmenu={handleContextMenu}
+            />
         {/each}
     {:else}
         <div class="empty">No Folder Opened</div>
@@ -84,6 +115,32 @@
         text-transform: uppercase;
         font-size: 0.75rem;
         color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .actions {
+        display: flex;
+        gap: 8px;
+        /* opacity: 0; removed to make always visible */
+    }
+    /* .header:hover .actions { opacity: 1; } removed */
+    .action-btn {
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        cursor: pointer;
+        padding: 2px;
+        border-radius: 4px;
+        font-size: 1rem;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .action-btn:hover {
+        color: var(--text-primary);
+        background: rgba(128, 128, 128, 0.1);
     }
     .empty {
         padding: 20px;

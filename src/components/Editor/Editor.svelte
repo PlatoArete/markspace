@@ -9,11 +9,23 @@
 
   export let content: string;
   export let config: WorkspaceConfig = $workspaceStore.config;
+  export let cursorPosition: number | undefined = undefined; // New prop for initial cursor pos
   export let onChange: (newContent: string) => void;
 
   let container: HTMLDivElement;
   let view: EditorView;
   let searchVisible = false;
+
+  // Function to move cursor and scroll
+  function jumpToCursor(pos: number) {
+    if (!view) return;
+    view.dispatch({
+      selection: { anchor: pos, head: pos },
+      effects: EditorView.scrollIntoView(pos, { y: "center" }),
+    });
+    // Focus the editor
+    view.focus();
+  }
 
   onMount(() => {
     const updateListener = EditorView.updateListener.of((update) => {
@@ -46,6 +58,10 @@
       state,
       parent: container,
     });
+
+    if (cursorPosition !== undefined) {
+      jumpToCursor(cursorPosition);
+    }
   });
 
   onDestroy(() => {
@@ -77,11 +93,21 @@
     const highPriKeymap = Prec.highest(searchKeymapExtension);
 
     view.setState(
-      createEditorState(content, config, [
-        updateListener,
-        highPriKeymap,
-      ]),
+      createEditorState(content, config, [updateListener, highPriKeymap]),
     );
+
+    // Jump if provided
+    if (cursorPosition !== undefined) {
+      jumpToCursor(cursorPosition);
+    }
+  } else if (view && cursorPosition !== undefined) {
+    // Content didn't change (or mismatch) but cursor did?
+    // Actually usually both change. But if only cursor prop changes we might want to jump.
+    // But props change triggers the reactive block.
+    // We should check if current selection matches.
+    // For simplicity, just jump if provided (might be annoying if user clicks elsewhere, but this prop comes from opening file)
+    // Usually openFile sets it, then it's static.
+    // We can rely on the fact that openFile updates the store which updates the prop.
   }
 </script>
 

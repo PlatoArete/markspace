@@ -36,9 +36,14 @@ export interface WorkspaceFS {
   exists(path: string): Promise<boolean>;
 
   /**
-   * Watch for changes. Returns unsubscribe function.
+   * Renames a file or directory.
    */
-  watchChanges(path: string, callback: (event: FSEvent) => void): Promise<Unsubscribe>;
+  renamePath(oldPath: string, newPath: string): Promise<void>;
+
+  /**
+   * Creates a directory.
+   */
+  createDirectory(path: string): Promise<void>;
 }
 
 export interface FolderHandle {
