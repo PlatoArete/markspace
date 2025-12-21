@@ -275,6 +275,11 @@
       livePreviewCompartment.of(
         $workspaceStore.livePreviewEnabled ? livePreviewPlugin : [],
       ),
+      EditorView.contentAttributes.of({
+        spellcheck: "true",
+        autocorrect: "on",
+        autocapitalize: "on",
+      }),
     ];
 
     const state = createEditorState(content, config, initialExtensions);
@@ -318,6 +323,11 @@
       updateListener,
       highPriKeymap,
       livePreviewCompartment.of(livePreviewEnabled ? livePreviewPlugin : []),
+      EditorView.contentAttributes.of({
+        spellcheck: "true",
+        autocorrect: "on",
+        autocapitalize: "on",
+      }),
     ];
 
     view.setState(createEditorState(content, config, currentExtensions));
