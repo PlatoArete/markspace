@@ -1,7 +1,7 @@
 import { EditorView } from '@codemirror/view';
 import type { Extension } from '@codemirror/state';
 
-export const baseTheme = EditorView.theme({
+export const editorTheme = EditorView.theme({
     "&": {
         color: "var(--text-primary)",
         backgroundColor: "var(--bg-primary)",

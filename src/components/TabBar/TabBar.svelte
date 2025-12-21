@@ -74,26 +74,48 @@
         }
         draggedIndex = null;
     }
+
+    function toggleLivePreview() {
+        actions.toggleLivePreview();
+    }
 </script>
 
-<div
-    class="tab-bar"
-    on:dragover={handleDragOver}
-    on:drop={handleContainerDrop}
-    role="list"
->
-    {#each $workspaceStore.openFiles as file, index}
-        <Tab
-            {file}
-            active={index === $workspaceStore.activeFileIndex}
-            on:click={() => handleSelect(index)}
-            on:close={() => handleClose(index)}
-            on:contextmenu={(e) => handleContextMenu(e.detail, index)}
-            on:dragstart={() => onDragStart(index)}
-            on:drop={() => onDrop(index)}
-            on:dragend={onDragEnd}
-        />
-    {/each}
+<div class="tab-bar" role="list">
+    <!-- Scrolled container for tabs -->
+    <div
+        class="tabs-scroll"
+        on:dragover={handleDragOver}
+        on:drop={handleContainerDrop}
+        role="group"
+    >
+        {#each $workspaceStore.openFiles as file, index}
+            <Tab
+                {file}
+                active={index === $workspaceStore.activeFileIndex}
+                on:click={() => handleSelect(index)}
+                on:close={() => handleClose(index)}
+                on:contextmenu={(e) => handleContextMenu(e.detail, index)}
+                on:dragstart={() => onDragStart(index)}
+                on:drop={() => onDrop(index)}
+                on:dragend={onDragEnd}
+            />
+        {/each}
+        <!-- Spacer to allow dropping at end -->
+        <div
+            class="tab-spacer"
+            on:drop={handleContainerDrop}
+            role="presentation"
+        ></div>
+    </div>
+
+    <!-- Toggle Button fixed to right -->
+    <button
+        class="toggle-btn"
+        on:click={toggleLivePreview}
+        title="Toggle Live Preview"
+    >
+        {$workspaceStore.livePreviewEnabled ? "👁️" : "📝"}
+    </button>
 </div>
 
 <ContextMenu
@@ -107,18 +129,49 @@
 <style>
     .tab-bar {
         display: flex;
-        overflow-x: auto;
         background: var(--bg-secondary);
         border-bottom: 1px solid var(--border);
         height: 35px;
         flex-shrink: 0;
+        justify-content: space-between;
         -webkit-app-region: no-drag;
         app-region: no-drag;
     }
-    .tab-bar::-webkit-scrollbar {
+
+    .tabs-scroll {
+        display: flex;
+        overflow-x: auto;
+        flex-grow: 1;
+        height: 100%;
+    }
+
+    .tab-spacer {
+        flex-grow: 1;
+        min-width: 20px;
+    }
+
+    .tabs-scroll::-webkit-scrollbar {
         height: 4px;
     }
-    .tab-bar::-webkit-scrollbar-thumb {
+    .tabs-scroll::-webkit-scrollbar-thumb {
         background: rgba(0, 0, 0, 0.2);
+    }
+
+    .toggle-btn {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 0 10px;
+        font-size: 1.2em;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        opacity: 0.7;
+        transition: opacity 0.2s;
+        border-left: 1px solid var(--border);
+    }
+    .toggle-btn:hover {
+        opacity: 1;
+        background: rgba(0, 0, 0, 0.05);
     }
 </style>

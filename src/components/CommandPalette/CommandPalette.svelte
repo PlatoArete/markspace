@@ -59,6 +59,13 @@
                     window.location.reload();
                 },
             },
+            {
+                label: "Toggle Live Preview",
+                action: () => {
+                    actions.toggleLivePreview();
+                    close();
+                },
+            },
         ];
 
         // Add Open Files matches

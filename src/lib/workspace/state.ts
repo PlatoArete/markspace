@@ -29,6 +29,7 @@ export interface WorkspaceState {
     // UI State
     sidebarVisible: boolean;
     sidebarWidth: number;
+    livePreviewEnabled: boolean;
 
     // Actions
     setRoot: (root: FolderHandle) => void;
@@ -45,6 +46,7 @@ export interface WorkspaceState {
     closeAllFiles: () => void;
     closeOtherFiles: (keepIndex: number) => void;
     moveOpenFiles: (fromIndex: number, toIndex: number) => void;
+    toggleLivePreview: () => void;
 }
 
 const startStore = createStore<WorkspaceState>((set) => ({
@@ -56,6 +58,7 @@ const startStore = createStore<WorkspaceState>((set) => ({
 
     sidebarVisible: true,
     sidebarWidth: 250,
+    livePreviewEnabled: true,
 
     setRoot: (root) => set({ root }),
     setConfig: (config) => set({ config }),
@@ -167,7 +170,9 @@ const startStore = createStore<WorkspaceState>((set) => ({
         }
 
         return { openFiles: newFiles, activeFileIndex: newActiveIndex };
-    })
+    }),
+
+    toggleLivePreview: () => set((state) => ({ livePreviewEnabled: !state.livePreviewEnabled })),
 }));
 
 export const workspaceStore = toSvelteStore(startStore);
