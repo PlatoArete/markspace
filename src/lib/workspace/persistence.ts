@@ -16,6 +16,8 @@ export interface SavedState {
     activeFileIndex: number;
     sidebarVisible: boolean;
     sidebarWidth: number;
+    quickLinks?: string[]; // Optional for backward compat
+    recentWorkspaces?: string[]; // Optional for backward compat
 }
 
 export function saveSession(state: WorkspaceState) {
@@ -24,7 +26,9 @@ export function saveSession(state: WorkspaceState) {
         openFiles: state.openFiles,
         activeFileIndex: state.activeFileIndex,
         sidebarVisible: state.sidebarVisible,
-        sidebarWidth: state.sidebarWidth
+        sidebarWidth: state.sidebarWidth,
+        quickLinks: state.quickLinks,
+        recentWorkspaces: state.recentWorkspaces
     };
     try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));

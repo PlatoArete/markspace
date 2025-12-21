@@ -4,6 +4,7 @@
     import { loadConfig } from "$lib/workspace/config";
     import FileTree from "./FileTree.svelte";
     import SidebarSearch from "./SidebarSearch.svelte"; // We'll create this next
+    import QuickLinks from "./QuickLinks.svelte";
     import { Files, Search, FolderOpen } from "lucide-svelte";
 
     import ContextMenu from "../ContextMenu/ContextMenu.svelte";
@@ -12,6 +13,7 @@
 
     export let width: number;
     export let visible: boolean;
+    export let isResizing = false;
 
     let activeTab: "files" | "search" = "files";
 
@@ -39,6 +41,7 @@
                 actions.setRoot(handle);
                 const config = await loadConfig(handle.path);
                 actions.setConfig(config);
+                actions.addToRecent(handle.path);
             }
         } catch (e) {
             console.error("Open folder failed", e);
@@ -66,6 +69,16 @@
         menuItems = [
             { label: "New File", action: () => handleNewFile(entry) },
             { label: "New Folder", action: () => handleNewFolder(entry) },
+            { label: "New Folder", action: () => handleNewFolder(entry) },
+            { separator: true },
+            ...(entry.type === "directory"
+                ? [
+                      {
+                          label: "Add to Quick Links",
+                          action: () => actions.addQuickLink(entry.path),
+                      },
+                  ]
+                : []),
             { separator: true },
             { label: "Rename", action: () => handleRename(entry) },
             {
@@ -201,9 +214,51 @@
 
     // Keyboard shortcut listener to toggle tabs could go here or in parent
     // For now, simple clicks.
+    function handleQuickLinkContextMenu(
+        e: CustomEvent<{
+            originalEvent: MouseEvent;
+            path: string;
+            type: "favorite" | "recent";
+        }>,
+    ) {
+        const { originalEvent, path, type } = e.detail;
+        originalEvent.preventDefault();
+        originalEvent.stopPropagation();
+
+        menuX = originalEvent.clientX;
+        menuY = originalEvent.clientY;
+        menuVisible = true;
+
+        if (type === "favorite") {
+            menuItems = [
+                {
+                    label: "Remove Favorite",
+                    action: () => actions.removeQuickLink(path),
+                    danger: true,
+                },
+            ];
+        } else {
+            menuItems = [
+                {
+                    label: "Add to Favorites",
+                    action: () => actions.addQuickLink(path),
+                },
+                {
+                    label: "Remove from Recent",
+                    action: () => actions.removeRecent(path),
+                    danger: true,
+                },
+            ];
+        }
+    }
 </script>
 
-<div class="sidebar" style="width: {width}px" class:hidden={!visible}>
+<div
+    class="sidebar"
+    style="width: {width}px"
+    class:hidden={!visible}
+    class:no-transition={isResizing}
+>
     <div class="sidebar-header">
         <div class="tabs">
             <button
@@ -230,6 +285,7 @@
 
     <div class="sidebar-content">
         {#if activeTab === "files"}
+            <QuickLinks on:itemcontextmenu={handleQuickLinkContextMenu} />
             {#key treeRefreshKey}
                 <FileTree
                     on:itemcontextmenu={handleContextMenu}
@@ -279,6 +335,10 @@
             min-width 0.2s cubic-bezier(0.25, 1, 0.5, 1);
         box-shadow: 2px 0 5px rgba(0, 0, 0, 0.03); /* Subtle separation */
         z-index: 10; /* Ensure shadow sits above editor if needed */
+    }
+
+    .sidebar.no-transition {
+        transition: none !important;
     }
 
     .sidebar.hidden {

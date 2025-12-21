@@ -11,6 +11,7 @@
     "core:window:allow-set-position",
     "core:window:allow-maximize",
     "opener:default",
+    "core:path:default",
     "fs:default",
     "fs:allow-write-text-file",
     "fs:allow-rename",

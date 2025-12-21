@@ -48,7 +48,15 @@ export interface WorkspaceFS {
   /**
    * Creates a directory.
    */
+  /**
+   * Creates a directory.
+   */
   createDirectory(path: string): Promise<void>;
+
+  /**
+   * Returns the path to the system Documents directory.
+   */
+  getDocumentsDir(): Promise<string>;
 }
 
 export interface FolderHandle {

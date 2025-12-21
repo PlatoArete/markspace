@@ -49,6 +49,17 @@ export interface WorkspaceState {
     toggleLivePreview: () => void;
     toggleSidebar: () => void;
     setFiles: (files: OpenFile[]) => void;
+
+    // Phase 15
+    quickLinks: string[];
+    recentWorkspaces: string[];
+    setQuickLinks: (links: string[]) => void;
+    setRecentWorkspaces: (recents: string[]) => void;
+    addQuickLink: (path: string) => void;
+    prependQuickLink: (path: string) => void;
+    removeQuickLink: (path: string) => void;
+    addToRecent: (path: string) => void;
+    removeRecent: (path: string) => void;
 }
 
 const startStore = createStore<WorkspaceState>((set) => ({
@@ -61,6 +72,10 @@ const startStore = createStore<WorkspaceState>((set) => ({
     sidebarVisible: true,
     sidebarWidth: 250,
     livePreviewEnabled: true,
+
+    // Phase 15
+    quickLinks: [],
+    recentWorkspaces: [],
 
     setRoot: (root) => set({ root }),
     setConfig: (config) => set({ config }),
@@ -178,6 +193,36 @@ const startStore = createStore<WorkspaceState>((set) => ({
     toggleLivePreview: () => set((state) => ({ livePreviewEnabled: !state.livePreviewEnabled })),
 
     toggleSidebar: () => set((state) => ({ sidebarVisible: !state.sidebarVisible })),
+
+    // Phase 15: Quick Links & Recent
+    setQuickLinks: (links) => set({ quickLinks: links }),
+    setRecentWorkspaces: (recents) => set({ recentWorkspaces: recents }),
+
+    addQuickLink: (path) => set((state) => {
+        if (state.quickLinks.includes(path)) return {};
+        // Use a Set to ensure uniqueness, though check above handles it. 
+        return { quickLinks: [...state.quickLinks, path] };
+    }),
+
+    prependQuickLink: (path) => set((state) => {
+        const filtered = state.quickLinks.filter(p => p !== path);
+        return { quickLinks: [path, ...filtered] };
+    }),
+
+    removeQuickLink: (path) => set((state) => ({
+        quickLinks: state.quickLinks.filter(p => p !== path)
+    })),
+
+    addToRecent: (path) => set((state) => {
+        // Remove if exists to bubble to top
+        const filtered = state.recentWorkspaces.filter(p => p !== path);
+        // Add to front, slice to max 5
+        return { recentWorkspaces: [path, ...filtered].slice(0, 5) };
+    }),
+
+    removeRecent: (path) => set((state) => ({
+        recentWorkspaces: state.recentWorkspaces.filter(p => p !== path)
+    })),
 }));
 
 export const workspaceStore = toSvelteStore(startStore);

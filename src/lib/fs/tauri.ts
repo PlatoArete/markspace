@@ -117,4 +117,12 @@ export class TauriFS implements WorkspaceFS {
     async createDirectory(path: string): Promise<void> {
         await mkdir(path);
     }
+
+    async getDocumentsDir(): Promise<string> {
+        // Dynamic import to avoid issues if module resolution is tricky, or just top level if standard
+        // But the user might not have installed @tauri-apps/api if it wasn't there.
+        // Assuming it's available as it's a tauri app.
+        const { documentDir } = await import('@tauri-apps/api/path');
+        return await documentDir();
+    }
 }

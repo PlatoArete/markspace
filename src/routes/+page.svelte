@@ -135,6 +135,40 @@
           actions.setActiveFile(saved.activeFileIndex);
         }
       }
+
+      // Phase 15: Restore QuickLinks and Recents
+      // Restore links first
+      if (saved.quickLinks && saved.quickLinks.length > 0) {
+        actions.setQuickLinks(saved.quickLinks);
+      }
+
+      // Auto-add Documents folder (ensure it exists)
+      try {
+        const docs = await fs.getDocumentsDir();
+        if (docs) {
+          // Verify if it's already there to avoid unnecessary store updates (though store handles it)
+          // But we need to act after the setQuickLinks above.
+          // Since checking store state synchronously here is tricky if update is async (zustand vanilla is sync though)
+          // Use prepend to force it to top as requested.
+          actions.prependQuickLink(docs);
+        }
+      } catch (e) {
+        console.error("Could not get documents dir", e);
+      }
+
+      if (saved.recentWorkspaces) {
+        actions.setRecentWorkspaces(saved.recentWorkspaces);
+      }
+    } else {
+      // First run (no saved session)
+      try {
+        const docs = await fs.getDocumentsDir();
+        if (docs) {
+          actions.addQuickLink(docs);
+        }
+      } catch (e) {
+        console.log("Could not get documents dir for first run", e);
+      }
     }
   });
 
