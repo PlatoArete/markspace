@@ -1,6 +1,7 @@
 <script lang="ts">
     import { workspaceStore, actions } from "$lib/workspace/state";
     import Tab from "./Tab.svelte";
+    import { PanelLeft, Eye, FileText, PanelLeftClose } from "lucide-svelte";
     import ContextMenu from "../ContextMenu/ContextMenu.svelte";
     import Modal from "../UI/Modal.svelte";
 
@@ -145,7 +146,11 @@
         on:click={toggleSidebar}
         title="Toggle Sidebar"
     >
-        {$workspaceStore.sidebarVisible ? "◀" : "▶"}
+        {#if $workspaceStore.sidebarVisible}
+            <PanelLeftClose size={18} />
+        {:else}
+            <PanelLeft size={18} />
+        {/if}
     </button>
 
     <!-- Scrolled container for tabs -->
@@ -181,7 +186,11 @@
         on:click={toggleLivePreview}
         title="Toggle Live Preview"
     >
-        {$workspaceStore.livePreviewEnabled ? "👁️" : "📝"}
+        {#if $workspaceStore.livePreviewEnabled}
+            <Eye size={18} />
+        {:else}
+            <FileText size={18} />
+        {/if}
     </button>
 </div>
 

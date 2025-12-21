@@ -2,6 +2,7 @@
     import { workspaceStore, actions } from "$lib/workspace/state";
     import { fs } from "$lib/fs";
     import TreeNode from "./TreeNode.svelte";
+    import { FilePlus, FolderPlus } from "lucide-svelte";
     import type { Entry } from "$lib/fs/interface";
 
     export let dirtyPaths: Set<string> = new Set();
@@ -82,14 +83,14 @@
                     title="New File"
                     on:click={() => dispatch("newfile", $workspaceStore.root)}
                 >
-                    📝
+                    <FilePlus size={16} />
                 </button>
                 <button
                     class="action-btn"
                     title="New Folder"
                     on:click={() => dispatch("newfolder", $workspaceStore.root)}
                 >
-                    📁
+                    <FolderPlus size={16} />
                 </button>
             </div>
         </div>

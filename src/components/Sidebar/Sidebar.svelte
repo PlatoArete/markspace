@@ -4,6 +4,7 @@
     import { loadConfig } from "$lib/workspace/config";
     import FileTree from "./FileTree.svelte";
     import SidebarSearch from "./SidebarSearch.svelte"; // We'll create this next
+    import { Files, Search, FolderOpen } from "lucide-svelte";
 
     import ContextMenu from "../ContextMenu/ContextMenu.svelte";
     import Modal from "../UI/Modal.svelte";
@@ -208,20 +209,22 @@
             <button
                 class:active={activeTab === "files"}
                 on:click={() => (activeTab = "files")}
+                title="Explorer"
             >
-                Files
+                <Files size={18} />
             </button>
             <button
                 class:active={activeTab === "search"}
                 on:click={() => (activeTab = "search")}
+                title="Search"
             >
-                Search
+                <Search size={18} />
             </button>
         </div>
         {#if activeTab === "files"}
-            <button on:click={openFolder} class="icon-btn" title="Open Folder"
-                >📂</button
-            >
+            <button on:click={openFolder} class="icon-btn" title="Open Folder">
+                <FolderOpen size={18} />
+            </button>
         {/if}
     </div>
 
@@ -271,9 +274,20 @@
         background: var(--bg-secondary);
         height: 100%;
         overflow: hidden;
+        transition:
+            width 0.2s cubic-bezier(0.25, 1, 0.5, 1),
+            min-width 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+        /* Will-change for performance optimization if needed, but width usually fine */
+    }
+    .sidebar.no-transition {
+        transition: none !important;
     }
     .sidebar.hidden {
-        display: none;
+        /* display: none;  <-- Old way */
+        width: 0 !important;
+        min-width: 0 !important;
+        border-right: none;
+        white-space: nowrap; /* Prevent text wrapping mess during shrink */
     }
     .sidebar-header {
         padding: 10px;

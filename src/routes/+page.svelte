@@ -254,6 +254,7 @@
   <Sidebar
     width={$workspaceStore.sidebarWidth}
     visible={$workspaceStore.sidebarVisible}
+    {isResizing}
   />
 
   <!-- svelte-ignore a11y-no-static-element-interactions -->

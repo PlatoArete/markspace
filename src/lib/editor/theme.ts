@@ -9,7 +9,8 @@ export const editorTheme = EditorView.theme({
     },
     ".cm-content": {
         caretColor: "var(--accent)",
-        fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, monospace" // Better font?
+        fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, monospace",
+        padding: "4px 0"
     },
     ".cm-cursor, .cm-dropCursor": {
         borderLeftColor: "var(--accent)"

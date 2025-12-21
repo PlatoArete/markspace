@@ -1,5 +1,13 @@
 <script lang="ts">
     import { createEventDispatcher, onMount } from "svelte";
+    import { fly } from "svelte/transition";
+    import {
+        ArrowUp,
+        ArrowDown,
+        X,
+        ChevronRight,
+        ChevronDown,
+    } from "lucide-svelte";
     import { EditorView } from "@codemirror/view";
     import {
         findNext,
@@ -31,11 +39,16 @@
             searchText = defaultSearch;
         }
         // Open the search panel state to activate highlighting
-        view.dispatch({ effects: openSearchPanel.of(null) });
+        // openSearchPanel is a Command: (view) => boolean
+        if (view) openSearchPanel(view);
+
         updateSearch();
     });
 
     $: if (view && visible) {
+        // Ensure panel is marked 'open' in CM state when we become visible
+        // This ensures the search extension logic (like highlighting) is active
+        openSearchPanel(view);
         updateSearch();
     } else if (view && !visible) {
         // Clear search when closed? Optional.
@@ -147,7 +160,7 @@
 
     function close() {
         // Close the search panel state
-        view.dispatch({ effects: closeSearchPanel.of(null) });
+        if (view) closeSearchPanel(view);
         dispatch("close");
         view.focus();
     }
@@ -180,6 +193,7 @@
         aria-label="Find and Replace"
         on:keydown={handleKeydown}
         tabindex="-1"
+        transition:fly={{ y: -10, duration: 150 }}
     >
         <div class="row top-row">
             <div class="input-wrapper">
@@ -223,15 +237,24 @@
                 </div>
             </div>
             <div class="nav-buttons">
-                <button on:click={handlePrev} title="Previous Match">↑</button>
-                <button on:click={handleNext} title="Next Match">↓</button>
-                <button on:click={close} title="Close">×</button>
+                <button on:click={handlePrev} title="Previous Match"
+                    ><ArrowUp size={16} /></button
+                >
+                <button on:click={handleNext} title="Next Match"
+                    ><ArrowDown size={16} /></button
+                >
+                <button on:click={close} title="Close"><X size={16} /></button>
             </div>
         </div>
 
         <div class="row toggle-row">
             <button class="toggle-replace" on:click={toggleReplace}>
-                {replaceMode ? "▼" : "▶"} Replace
+                {#if replaceMode}
+                    <ChevronDown size={14} />
+                {:else}
+                    <ChevronRight size={14} />
+                {/if}
+                <span style="margin-left: 4px;">Replace</span>
             </button>
         </div>
 

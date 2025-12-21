@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { OpenFile } from "$lib/workspace/state";
     import { createEventDispatcher } from "svelte";
+    import { X } from "lucide-svelte";
 
     export let file: OpenFile;
     export let active: boolean = false;
@@ -76,9 +77,10 @@
     {#if file.content !== file.savedContent}
         <span class="dot">●</span>
     {/if}
-    <button class="close" on:click={close} title="Close Tab" type="button"
-        >×</button
-    >
+
+    <button class="close" on:click={close} title="Close Tab" type="button">
+        <X size={14} />
+    </button>
 </div>
 
 <style>
