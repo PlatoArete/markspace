@@ -5,7 +5,14 @@ const STORAGE_KEY = 'markspace_v1_session';
 
 export interface SavedState {
     rootPath: string | null;
-    openFilePaths: string[];
+    openFiles: {
+        path: string;
+        name: string;
+        content: string;
+        savedContent: string;
+        scrollPosition: number;
+        cursorPosition: number;
+    }[];
     activeFileIndex: number;
     sidebarVisible: boolean;
     sidebarWidth: number;
@@ -14,7 +21,7 @@ export interface SavedState {
 export function saveSession(state: WorkspaceState) {
     const saved: SavedState = {
         rootPath: state.root ? state.root.path : null,
-        openFilePaths: state.openFiles.map(f => f.path),
+        openFiles: state.openFiles,
         activeFileIndex: state.activeFileIndex,
         sidebarVisible: state.sidebarVisible,
         sidebarWidth: state.sidebarWidth

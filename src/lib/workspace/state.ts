@@ -47,6 +47,7 @@ export interface WorkspaceState {
     closeOtherFiles: (keepIndex: number) => void;
     moveOpenFiles: (fromIndex: number, toIndex: number) => void;
     toggleLivePreview: () => void;
+    setFiles: (files: OpenFile[]) => void;
 }
 
 const startStore = createStore<WorkspaceState>((set) => ({
@@ -62,6 +63,7 @@ const startStore = createStore<WorkspaceState>((set) => ({
 
     setRoot: (root) => set({ root }),
     setConfig: (config) => set({ config }),
+    setFiles: (files) => set({ openFiles: files }),
 
     openFile: (file) => set((state) => {
         // Check if already open

@@ -2,14 +2,68 @@
     import { workspaceStore, actions } from "$lib/workspace/state";
     import Tab from "./Tab.svelte";
     import ContextMenu from "../ContextMenu/ContextMenu.svelte";
+    import Modal from "../UI/Modal.svelte";
 
     let menuVisible = false;
     let menuX = 0;
     let menuY = 0;
     let menuItems: any[] = [];
 
+    // Modal State
+    let showModal = false;
+    let modalTitle = "";
+    let modalMessage = "";
+    let modalTargetIndex: number | null = null;
+    let modalPrimaryAction = "Save";
+    let modalExtraAction = "Discard";
+
     function handleClose(index: number) {
-        actions.closeFile(index);
+        const file = $workspaceStore.openFiles[index];
+        if (file && file.content !== file.savedContent) {
+            modalTargetIndex = index;
+            modalTitle = "Unsaved Changes";
+            modalMessage = `Do you want to save changes to "${file.name}"?`;
+            modalPrimaryAction = "Save"; // Primary = Save
+            modalExtraAction = "Discard"; // Extra = Discard
+            showModal = true;
+        } else {
+            actions.closeFile(index);
+        }
+    }
+
+    async function onModalConfirm() {
+        if (modalTargetIndex !== null) {
+            // Save Action
+            const file = $workspaceStore.openFiles[modalTargetIndex];
+            const content = file.content; // Current content
+
+            // We need to call save logic. existing saveContent in +page.svelte is local there.
+            // But we can trigger a save via fs.writeFile directly here since we have path/content?
+            // Yes, reusing `fs` is cleaner than dispatching up to layout?
+            // Actually `actions.updateFileContent` updates store.
+            // We just need to persist to disk.
+            // We need `fs` import.
+
+            // Wait, "Save" implies writing to disk.
+            // I need to import `fs` here.
+            await import("$lib/fs").then(async ({ fs }) => {
+                await fs.writeFile(file.path, content);
+                actions.markFileSaved(modalTargetIndex!); // Mark clean
+                actions.closeFile(modalTargetIndex!); // Then close
+            });
+
+            showModal = false;
+            modalTargetIndex = null;
+        }
+    }
+
+    function onModalExtra() {
+        if (modalTargetIndex !== null) {
+            // Discard Action
+            actions.closeFile(modalTargetIndex);
+            showModal = false;
+            modalTargetIndex = null;
+        }
     }
 
     function handleSelect(index: number) {
@@ -126,6 +180,18 @@
     onClose={() => (menuVisible = false)}
 />
 
+<Modal
+    bind:visible={showModal}
+    title={modalTitle}
+    message={modalMessage}
+    primaryAction={modalPrimaryAction}
+    extraAction={modalExtraAction}
+    extraActionDanger={true}
+    on:confirm={onModalConfirm}
+    on:extra={onModalExtra}
+    on:cancel={() => (showModal = false)}
+/>
+
 <style>
     .tab-bar {
         display: flex;
@@ -135,7 +201,6 @@
         flex-shrink: 0;
         justify-content: space-between;
         -webkit-app-region: no-drag;
-        app-region: no-drag;
     }
 
     .tabs-scroll {

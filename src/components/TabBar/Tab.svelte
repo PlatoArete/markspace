@@ -95,7 +95,6 @@
         min-width: 100px;
         height: 35px;
         -webkit-app-region: no-drag;
-        app-region: no-drag;
     }
     .tab.active {
         background: var(--bg-primary);

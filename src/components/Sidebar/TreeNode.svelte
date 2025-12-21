@@ -6,12 +6,16 @@
 
     export let entry: Entry;
     export let depth: number = 0;
+    export let dirtyPaths: Set<string> = new Set();
 
     const dispatch = createEventDispatcher();
 
     let expanded = false;
     let children: Entry[] = [];
     let loading = false;
+
+    // derived check
+    $: isDirty = dirtyPaths.has(entry.path);
 
     async function toggleExpand() {
         if (entry.type !== "directory") {
@@ -66,6 +70,9 @@
         {/if}
     </span>
     <span class="name">{entry.name}</span>
+    {#if isDirty}
+        <span class="dirty-dot">●</span>
+    {/if}
 </div>
 
 {#if expanded}
@@ -81,6 +88,7 @@
             {#each children as child}
                 <svelte:self
                     entry={child}
+                    {dirtyPaths}
                     depth={depth + 1}
                     on:open={handleOpen}
                     on:contextmenu={handleChildContextMenu}
@@ -112,6 +120,11 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+    }
+    .dirty-dot {
+        font-size: 0.6em;
+        margin-left: 6px;
+        color: var(--text-secondary); /* or accent? */
     }
     .loading {
         font-size: 0.8em;

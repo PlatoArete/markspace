@@ -10,6 +10,8 @@
     export let placeholder = "";
     export let primaryAction = "Confirm";
     export let secondaryAction = "Cancel";
+    export let extraAction = ""; // e.g. "Discard" or "Save"
+    export let extraActionDanger = false;
     export let danger = false;
 
     const dispatch = createEventDispatcher();
@@ -44,9 +46,18 @@
             }
         })();
     }
+    function onWindowKeydown(e: KeyboardEvent) {
+        if (visible && e.key === "Escape") {
+            handleClose();
+        }
+    }
 </script>
 
+<svelte:window on:keydown={onWindowKeydown} />
+
 {#if visible}
+    <!-- svelte-ignore a11y-click-events-have-key-events -->
+    <!-- svelte-ignore a11y-no-static-element-interactions -->
     <div class="backdrop" on:click|self={handleClose}>
         <div class="modal" role="dialog" aria-modal="true">
             <div class="header">
@@ -72,6 +83,18 @@
                 <button class="secondary" on:click={handleClose}
                     >{secondaryAction}</button
                 >
+                {#if extraAction}
+                    <button
+                        class="secondary"
+                        class:danger={extraActionDanger}
+                        on:click={() => {
+                            dispatch("extra");
+                            visible = false;
+                        }}
+                    >
+                        {extraAction}
+                    </button>
+                {/if}
                 <button
                     class="primary"
                     class:danger

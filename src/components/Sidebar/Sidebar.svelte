@@ -44,6 +44,13 @@
         }
     }
 
+    // Reactive set of dirty file paths
+    $: dirtyPaths = new Set(
+        $workspaceStore.openFiles
+            .filter((f) => f.content !== f.savedContent)
+            .map((f) => f.path),
+    );
+
     function handleContextMenu(
         e: CustomEvent<{ originalEvent: MouseEvent; entry: Entry }>,
     ) {
@@ -227,6 +234,7 @@
                         handleNewFile({ ...e.detail, type: "directory" })}
                     on:newfolder={(e) =>
                         handleNewFolder({ ...e.detail, type: "directory" })}
+                    {dirtyPaths}
                 />
             {/key}
         {:else}

@@ -4,6 +4,8 @@
     import TreeNode from "./TreeNode.svelte";
     import type { Entry } from "$lib/fs/interface";
 
+    export let dirtyPaths: Set<string> = new Set();
+
     let rootEntries: Entry[] = [];
 
     $: if ($workspaceStore.root) {
@@ -94,6 +96,7 @@
         {#each rootEntries as entry}
             <TreeNode
                 {entry}
+                {dirtyPaths}
                 on:open={handleOpen}
                 on:contextmenu={handleContextMenu}
             />

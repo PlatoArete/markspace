@@ -44,22 +44,29 @@
         actions.setRoot({ path: saved.rootPath, name });
         loadConfig(saved.rootPath).then((config) => actions.setConfig(config));
 
-        for (const path of saved.openFilePaths) {
-          try {
-            const content = await fs.readFile(path);
-            const fname = path.split(/[\\/]/).pop() || "file";
-            actions.openFile({
-              path,
-              name: fname,
-              content,
-              savedContent: content,
-              scrollPosition: 0,
-              cursorPosition: 0,
-            });
-          } catch (e) {
-            console.error(`Failed to restore file ${path}`, e);
+        // Restore files with their dirty state content
+        if (saved.openFiles && saved.openFiles.length > 0) {
+          actions.setFiles(saved.openFiles);
+        } else if ((saved as any).openFilePaths) {
+          // Legacy support for old sessions (optional, but good for safety)
+          for (const path of (saved as any).openFilePaths) {
+            try {
+              const content = await fs.readFile(path);
+              const fname = path.split(/[\\/]/).pop() || "file";
+              actions.openFile({
+                path,
+                name: fname,
+                content,
+                savedContent: content,
+                scrollPosition: 0,
+                cursorPosition: 0,
+              });
+            } catch (e) {
+              console.error(`Failed to restore file ${path}`, e);
+            }
           }
         }
+
         if (saved.activeFileIndex !== -1) {
           actions.setActiveFile(saved.activeFileIndex);
         }
@@ -85,17 +92,26 @@
     const idx = $workspaceStore.activeFileIndex;
     if (idx !== -1) {
       actions.updateFileContent(idx, newContent);
-      saveContent(idx, newContent);
+      // Removed auto-save call. Saving is now manual or on exit (via session persistence).
     }
   }
 
   let saveStatus = "Ready";
-  let saveTimeout: any; // NodeJS.Timeout or number
+  let saveTimeout: any;
+
+  $: activeFile = $workspaceStore.openFiles[$workspaceStore.activeFileIndex];
+  $: if (activeFile) {
+    if (activeFile.content !== activeFile.savedContent) {
+      saveStatus = "Unsaved";
+    } else {
+      saveStatus = "Saved";
+    }
+  }
 
   function saveContent(index: number, content: string) {
     saveStatus = "Saving...";
-    // console.log("Debouncing save for index", index);
     clearTimeout(saveTimeout);
+    // Explicit save logic (Ctrl+S)
     saveTimeout = setTimeout(async () => {
       // console.log("Executing save for index", index);
       const file = $workspaceStore.openFiles[index];
