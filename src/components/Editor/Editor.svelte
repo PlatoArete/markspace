@@ -309,6 +309,11 @@
         config.editor?.wordWrap ? EditorView.lineWrapping : [],
       ),
       customSyntaxHighlighting, // Use our variable-based highlighting
+      EditorView.contentAttributes.of({
+        spellcheck: "true",
+        autocorrect: "on",
+        autocapitalize: "on",
+      }),
     ];
 
     const state = createEditorState(content, config, initialExtensions);
