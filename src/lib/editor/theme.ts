@@ -102,11 +102,22 @@ export const editorTheme = EditorView.theme({
     ".cm-gutters": {
         backgroundColor: "var(--bg-secondary)",
         color: "var(--text-secondary)",
-        borderRight: "1px solid var(--border)"
+        borderRight: "1px solid var(--border)",
+        opacity: "0.6" // Dim the entire gutter area slightly
+    },
+    ".cm-lineNumbers .cm-gutterElement": {
+        color: "inherit",
+        opacity: "0.6" // Further dim the numbers themselves relative to gutter text? Or just use this.
+    },
+    ".cm-activeLine": {
+        backgroundColor: "rgba(128, 128, 128, 0.08)", // Subtle highlight
+        borderRadius: "2px" // Optional polish
     },
     ".cm-activeLineGutter": {
         backgroundColor: "transparent",
-        color: "var(--text-primary)"
+        color: "var(--text-primary)",
+        fontWeight: "bold", // Make active line number clearer
+        opacity: "1" // Reset opacity for active line
     },
     // Tooltips (for the filter menu)
     ".cm-tooltip": {

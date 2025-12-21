@@ -277,11 +277,10 @@
         transition:
             width 0.2s cubic-bezier(0.25, 1, 0.5, 1),
             min-width 0.2s cubic-bezier(0.25, 1, 0.5, 1);
-        /* Will-change for performance optimization if needed, but width usually fine */
+        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.03); /* Subtle separation */
+        z-index: 10; /* Ensure shadow sits above editor if needed */
     }
-    .sidebar.no-transition {
-        transition: none !important;
-    }
+
     .sidebar.hidden {
         /* display: none;  <-- Old way */
         width: 0 !important;

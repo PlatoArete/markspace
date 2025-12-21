@@ -3,7 +3,7 @@
     import type { Entry } from "$lib/fs/interface";
     import { fs } from "$lib/fs";
     import { createEventDispatcher } from "svelte";
-    import { Folder, FolderOpen, FileText } from "lucide-svelte";
+    import { Folder, FolderOpen, FileText, File } from "lucide-svelte";
 
     export let entry: Entry;
     export let depth: number = 0;
@@ -70,8 +70,12 @@
             {:else}
                 <Folder size={16} />
             {/if}
+        {:else if entry.name.toLowerCase().endsWith(".md")}
+            <span style="color: var(--accent); display: flex;">
+                <FileText size={16} />
+            </span>
         {:else}
-            <FileText size={16} />
+            <File size={16} />
         {/if}
     </span>
     <span class="name">{entry.name}</span>
