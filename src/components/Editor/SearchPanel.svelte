@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { createEventDispatcher } from "svelte";
+    import { createEventDispatcher, onMount } from "svelte";
     import { EditorView } from "@codemirror/view";
     import {
         findNext,
@@ -8,6 +8,8 @@
         replaceAll,
         setSearchQuery,
         SearchQuery,
+        openSearchPanel,
+        closeSearchPanel,
     } from "@codemirror/search";
 
     export let view: EditorView;
@@ -22,6 +24,17 @@
     let regexp = false;
     let wholeWord = false;
 
+    export let defaultSearch: string = "";
+
+    onMount(() => {
+        if (defaultSearch) {
+            searchText = defaultSearch;
+        }
+        // Open the search panel state to activate highlighting
+        view.dispatch({ effects: openSearchPanel.of(null) });
+        updateSearch();
+    });
+
     $: if (view && visible) {
         updateSearch();
     } else if (view && !visible) {
@@ -30,6 +43,7 @@
 
     function updateSearch() {
         if (!view) return;
+        dispatch("searchChange", searchText);
         const query = new SearchQuery({
             search: searchText,
             caseSensitive,
@@ -38,14 +52,89 @@
             replace: replaceText,
         });
         view.dispatch({ effects: setSearchQuery.of(query) });
+        countMatches(query);
     }
+
+    let matchCount = 0;
+    let currentMatchIndex = 0;
+
+    function countMatches(query: SearchQuery) {
+        if (!view) return;
+        let count = 0;
+        let cursor = query.getCursor(view.state);
+
+        // Find current selection head to determine index
+        const selectionHead = view.state.selection.main.head;
+        let foundIndex = -1;
+
+        let result = cursor.next();
+        while (!result.done) {
+            count++;
+            const match = result.value;
+            // If the match ends after the selection head, and we haven't found index yet
+            if (
+                foundIndex === -1 &&
+                match.to >= selectionHead &&
+                match.from <= selectionHead
+            ) {
+                foundIndex = count;
+            } else if (foundIndex === -1 && match.from >= selectionHead) {
+                // This match is after our cursor, but we weren't *in* a match.
+            }
+            result = cursor.next();
+        }
+        matchCount = count;
+
+        updateCurrentMatchIndex();
+    }
+
+    function updateCurrentMatchIndex() {
+        if (!searchText) {
+            currentMatchIndex = 0;
+            return;
+        }
+        const query = new SearchQuery({
+            search: searchText,
+            caseSensitive,
+            regexp,
+            wholeWord,
+            replace: replaceText, // include replace for correctness though not needed for searching
+        });
+
+        let cursor = query.getCursor(view.state);
+        let count = 0;
+        const main = view.state.selection.main;
+        let found = 0;
+
+        let result = cursor.next();
+        while (!result.done) {
+            count++;
+            const match = result.value;
+            // Exact match for selection
+            if (match.from === main.from && match.to === main.to) {
+                found = count;
+            }
+            result = cursor.next();
+        }
+        currentMatchIndex = found;
+        matchCount = count; // Ensure sync
+    }
+
+    // Update index on user navigation (click/key)
+    // We can listen to view update in the parent, or check on every interactive action here.
+    // Or add a updateListener to view that calls updateCurrentMatchIndex?
+    // Since SearchPanel doesn't own the view update loop, we can only update on local actions
+    // OR we hook into view updates via props (passing view updates down?).
+    // For now, let's update on next/prev clicks.
 
     function handleNext() {
         findNext(view);
+        updateCurrentMatchIndex();
     }
 
     function handlePrev() {
         findPrevious(view);
+        updateCurrentMatchIndex();
     }
 
     function handleReplace() {
@@ -57,6 +146,8 @@
     }
 
     function close() {
+        // Close the search panel state
+        view.dispatch({ effects: closeSearchPanel.of(null) });
         dispatch("close");
         view.focus();
     }
@@ -99,6 +190,11 @@
                     placeholder="Find"
                     use:autofocusAction
                 />
+                {#if searchText}
+                    <span class="match-count">
+                        {currentMatchIndex} / {matchCount}
+                    </span>
+                {/if}
                 <div class="actions">
                     <button
                         class:active={caseSensitive}
@@ -250,5 +346,13 @@
 
     .replace-row input {
         padding-right: 8px; /* No actions here */
+    }
+    .match-count {
+        position: absolute;
+        right: 80px; /* Left of actions */
+        color: var(--text-secondary);
+        font-size: 0.75rem;
+        pointer-events: none;
+        white-space: nowrap;
     }
 </style>

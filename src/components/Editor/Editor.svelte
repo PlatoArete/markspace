@@ -19,6 +19,8 @@
   let view: EditorView;
   let searchVisible = false;
   let searchReplaceMode = false;
+  let activeSearchText = "";
+  let lastSearchText = "";
 
   // Compartment for live preview plugin
   let livePreviewCompartment = new Compartment();
@@ -220,8 +222,14 @@
     const searchKeymapExtension = keymap.of([
       {
         key: "Mod-f",
-        run: () => {
-          console.log("Ctrl-F pressed! Toggling searchVisible to true.");
+        run: (view) => {
+          const selection = view.state.sliceDoc(
+            view.state.selection.main.from,
+            view.state.selection.main.to,
+          );
+          activeSearchText = selection || lastSearchText;
+          if (selection) lastSearchText = selection;
+
           searchVisible = true;
           searchReplaceMode = false;
           return true;
@@ -229,7 +237,14 @@
       },
       {
         key: "Mod-h",
-        run: () => {
+        run: (view) => {
+          const selection = view.state.sliceDoc(
+            view.state.selection.main.from,
+            view.state.selection.main.to,
+          );
+          activeSearchText = selection || lastSearchText;
+          if (selection) lastSearchText = selection;
+
           searchVisible = true;
           searchReplaceMode = true;
           return true;
@@ -346,7 +361,12 @@
       {view}
       visible={true}
       replaceMode={searchReplaceMode}
+      defaultSearch={activeSearchText}
       on:close={closeCustomSearch}
+      on:searchChange={(e) => {
+        // If the user types in search box, update lastSearchText so it persists next time if closed
+        lastSearchText = e.detail;
+      }}
     />
   {/if}
 </div>

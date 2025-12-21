@@ -25,20 +25,9 @@ export const editorTheme = EditorView.theme({
         backgroundColor: "transparent",
         border: "none"
     },
-    // FORCE HIDE the default CodeMirror search panel if it ever tries to appear
-    ".cm-search": {
+    ".cm-panels.cm-panels-top": {
         display: "none !important"
     },
-    /* 
-       Note: Our custom panel uses class="search-panel", 
-       so it won't be affected by this rule.
-    */
-
-    // Flex Ordering to create logic rows:
-    // Row 1: Search Input (grow) + Next/Prev 
-    // Row 2: Options (Labels)
-    // Row 3: Replace Input (grow) + Replace Btns
-
     ".cm-search input[name='search']": {
         flex: "1 1 auto",
         order: "1",
@@ -48,13 +37,9 @@ export const editorTheme = EditorView.theme({
         order: "2",
         flex: "0 0 auto"
     },
-
-    // Force a break after the top row controls? Hard with flex.
-    // Instead let's just use order groups.
-
     ".cm-search input[name='replace']": {
         flex: "1 1 auto",
-        order: "10", // New Row effectively if we force wrap? 
+        order: "10",
         minWidth: "200px",
         marginTop: "4px"
     },
@@ -64,7 +49,7 @@ export const editorTheme = EditorView.theme({
     },
 
     ".cm-search label": {
-        order: "5", // Between Search and Replace
+        order: "5",
         display: "inline-flex",
         alignItems: "center",
         fontSize: "0.8em",
@@ -85,6 +70,19 @@ export const editorTheme = EditorView.theme({
         borderRadius: "4px",
         padding: "4px 8px",
         outline: "none"
+    },
+    "&.cm-focused": {
+        outline: "none"
+    },
+    ".cm-searchMatch": {
+        backgroundColor: "rgba(255, 255, 0, 0.3)"
+    },
+    ".cm-searchMatch.cm-searchMatch-selected, &.cm-focused .cm-searchMatch-selected": {
+        background: "#ff9900 !important",
+        color: "#000 !important"
+    },
+    ".cm-selectionMatch": {
+        backgroundColor: "rgba(255, 255, 0, 0.4)"
     },
     ".cm-search button": {
         background: "transparent",

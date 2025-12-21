@@ -1,7 +1,7 @@
 import { EditorState, type Extension } from '@codemirror/state';
 import { EditorView, keymap, lineNumbers, highlightActiveLineGutter } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
-import { searchKeymap, search } from '@codemirror/search';
+import { search, highlightSelectionMatches } from '@codemirror/search';
 import { markdown } from '@codemirror/lang-markdown';
 import { oneDark } from '@codemirror/theme-one-dark';
 import type { WorkspaceConfig } from '$lib/workspace/config';
@@ -14,8 +14,9 @@ export function createEditorState(content: string, config: WorkspaceConfig, extr
         highlightActiveLineGutter(),
         history(),
         markdown(),
-        search({ top: true, caseSensitive: false, literal: false }), // Ensure search state is enabled
-        editorTheme, // Our custom theme
+        search({ top: true }), // Include search with panel (we'll hide the panel via CSS)
+        highlightSelectionMatches(),
+        editorTheme, // Our custom theme AFTER search so it can style search elements
         keymap.of([
             ...defaultKeymap,
             ...historyKeymap,
