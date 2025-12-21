@@ -6,6 +6,11 @@ export interface WorkspaceFS {
   openFolder(): Promise<FolderHandle | null>;
 
   /**
+   * Opens the system save file picker and returns the selected path.
+   */
+  saveFile(defaultName?: string): Promise<string | null>;
+
+  /**
    * Reads a file as a string.
    */
   readFile(path: string): Promise<string>;

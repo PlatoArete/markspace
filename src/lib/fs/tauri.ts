@@ -1,4 +1,4 @@
-import { open } from '@tauri-apps/plugin-dialog';
+import { open, save } from '@tauri-apps/plugin-dialog';
 import { readTextFile, writeTextFile, remove, exists, readDir, watch, rename, mkdir } from '@tauri-apps/plugin-fs';
 import type { WorkspaceFS, FolderHandle, Entry, FSEvent, Unsubscribe } from './interface';
 
@@ -27,6 +27,20 @@ export class TauriFS implements WorkspaceFS {
             path,
             name
         };
+    }
+
+    async saveFile(defaultName?: string): Promise<string | null> {
+        const path = await save({
+            defaultPath: defaultName,
+            filters: [{
+                name: 'Markdown',
+                extensions: ['md', 'markdown']
+            }, {
+                name: 'All Files',
+                extensions: ['*']
+            }]
+        });
+        return path;
     }
 
     async readFile(path: string): Promise<string> {

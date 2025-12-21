@@ -11,21 +11,85 @@
 
   let showPalette = false;
 
+  function handleNewFile() {
+    // Find next available Untitled-X
+    let i = 1;
+    let name = `Untitled-${i}`;
+    // Check if exists in open files
+    while (
+      $workspaceStore.openFiles.some((f) => f.path === name || f.name === name)
+    ) {
+      i++;
+      name = `Untitled-${i}`;
+    }
+
+    actions.openFile({
+      path: name, // Virtual path
+      name: name,
+      content: "",
+      savedContent: "", // Initially clean? Or dirty? usually clean empty file.
+      scrollPosition: 0,
+      cursorPosition: 0,
+    });
+  }
+
+  async function handleSaveAs() {
+    const idx = $workspaceStore.activeFileIndex;
+    if (idx === -1) return;
+    const file = $workspaceStore.openFiles[idx];
+
+    try {
+      const newPath = await fs.saveFile(file.name);
+      if (newPath) {
+        await fs.writeFile(newPath, file.content);
+        const newName = newPath.split(/[\\/]/).pop() || "file";
+
+        // Update the file in store
+        // We use renameOpenFile to update the current tab in place
+        actions.renameOpenFile(file.path, newPath, newName);
+        actions.markFileSaved(idx);
+        saveStatus = "Saved";
+        setTimeout(() => {
+          if (saveStatus === "Saved") saveStatus = "Ready";
+        }, 2000);
+      }
+    } catch (e: any) {
+      console.error("Save As failed", e);
+      saveStatus = `Error: ${e.message || e}`;
+    }
+  }
+
   function handleKeydown(e: KeyboardEvent) {
-    if ((e.metaKey || e.ctrlKey) && e.key === "p") {
+    // console.log(e.key, e.ctrlKey, e.metaKey, e.shiftKey);
+    const cmd = e.metaKey || e.ctrlKey;
+
+    if (cmd && e.key === "p") {
       e.preventDefault();
       showPalette = !showPalette;
     }
-    if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+
+    if (cmd && e.key === "s") {
       e.preventDefault();
-      const idx = $workspaceStore.activeFileIndex;
-      if (idx !== -1) saveContent(idx, $workspaceStore.openFiles[idx].content);
+      if (e.shiftKey || e.altKey) {
+        handleSaveAs();
+      } else {
+        const idx = $workspaceStore.activeFileIndex;
+        if (idx !== -1)
+          saveContent(idx, $workspaceStore.openFiles[idx].content);
+      }
     }
-    if ((e.metaKey || e.ctrlKey) && e.key === "f") {
+
+    if (cmd && e.key === "n") {
+      e.preventDefault();
+      handleNewFile();
+    }
+
+    if (cmd && e.key === "f") {
       e.preventDefault();
       // The CodeMirror keymap will handle showing the search panel
     }
   }
+
   let persistTimeout: any;
   workspaceStore.subscribe((state) => {
     clearTimeout(persistTimeout);
@@ -99,23 +163,29 @@
   let saveStatus = "Ready";
   let saveTimeout: any;
 
-  $: activeFile = $workspaceStore.openFiles[$workspaceStore.activeFileIndex];
-  $: if (activeFile) {
-    if (activeFile.content !== activeFile.savedContent) {
-      saveStatus = "Unsaved";
-    } else {
-      saveStatus = "Saved";
-    }
-  }
-
   function saveContent(index: number, content: string) {
     saveStatus = "Saving...";
     clearTimeout(saveTimeout);
-    // Explicit save logic (Ctrl+S)
+
     saveTimeout = setTimeout(async () => {
-      // console.log("Executing save for index", index);
       const file = $workspaceStore.openFiles[index];
       if (file) {
+        // Check if virtual file
+        if (file.path.startsWith("Untitled-")) {
+          // Redirect to Save As
+          // We need to call handleSaveAs but it relies on active index.
+          // If the autosave triggers for a non-active file (rare but possible), we might have issues.
+          // But here saveContent is triggered by Ctrl+S on ACTIVE file primarily or debouncer?
+          // Actually saveContent is called by Ctrl+S manually now.
+          // So file is likely active.
+          if (index === $workspaceStore.activeFileIndex) {
+            await handleSaveAs();
+          } else {
+            console.warn("Cannot auto-save background untitled file");
+          }
+          return;
+        }
+
         try {
           await fs.writeFile(file.path, content);
           actions.markFileSaved(index);
@@ -128,7 +198,7 @@
           saveStatus = `Error: ${e.message || e}`;
         }
       }
-    }, 1000);
+    }, 100); // Reduced delay for explicit save
   }
 </script>
 
