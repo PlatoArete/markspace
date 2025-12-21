@@ -73,6 +73,13 @@
   font-size: 0.9em;
 }
 
+.cm-code-block-line {
+  font-family: 'JetBrains Mono', monospace;
+  background: rgba(128, 128, 128, 0.05);
+  /* Slightly lighter/different than inline? Or same? */
+  color: var(--accent);
+}
+
 /* Blockquote */
 .cm-blockquote {
   border-left: 3px solid var(--accent);

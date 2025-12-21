@@ -153,6 +153,23 @@ function buildDecorations(view: EditorView): DecorationSet {
             if (node.name === "InlineCode") {
                 decos.push({ from: node.from, to: node.to, value: Decoration.mark({ class: "cm-inline-code" }) });
             }
+
+            // FENCED CODE BLOCKS
+            if (node.name === "FencedCode") {
+                // Apply line decoration to every line in the block
+                const startLine = view.state.doc.lineAt(node.from);
+                const endLine = view.state.doc.lineAt(node.to);
+
+                for (let l = startLine.number; l <= endLine.number; l++) {
+                    const line = view.state.doc.line(l);
+                    decos.push({
+                        from: line.from,
+                        to: line.from,
+                        value: Decoration.line({ class: "cm-code-block-line" })
+                    });
+                }
+            }
+
             if (node.name === "CodeMark") {
                 if (!isCursorOnLine) {
                     decos.push({ from: node.from, to: node.to, value: hideDecoration });

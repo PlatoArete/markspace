@@ -12,6 +12,7 @@
 
     export let view: EditorView;
     export let visible: boolean = false;
+    export let replaceMode: boolean = false;
 
     const dispatch = createEventDispatcher();
 
@@ -20,7 +21,6 @@
     let caseSensitive = false;
     let regexp = false;
     let wholeWord = false;
-    let replaceMode = false;
 
     $: if (view && visible) {
         updateSearch();
