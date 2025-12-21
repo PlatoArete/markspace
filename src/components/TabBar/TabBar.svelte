@@ -1,9 +1,17 @@
 <script lang="ts">
     import { workspaceStore, actions } from "$lib/workspace/state";
     import Tab from "./Tab.svelte";
-    import { PanelLeft, Eye, FileText, PanelLeftClose } from "lucide-svelte";
+    import {
+        PanelLeft,
+        Eye,
+        FileText,
+        PanelLeftClose,
+        Share2,
+    } from "lucide-svelte";
     import ContextMenu from "../ContextMenu/ContextMenu.svelte";
     import Modal from "../UI/Modal.svelte";
+    import ShareMenu from "../ShareMenu/ShareMenu.svelte";
+    import { marked } from "marked";
 
     let menuVisible = false;
     let menuX = 0;
@@ -38,15 +46,6 @@
             const file = $workspaceStore.openFiles[modalTargetIndex];
             const content = file.content; // Current content
 
-            // We need to call save logic. existing saveContent in +page.svelte is local there.
-            // But we can trigger a save via fs.writeFile directly here since we have path/content?
-            // Yes, reusing `fs` is cleaner than dispatching up to layout?
-            // Actually `actions.updateFileContent` updates store.
-            // We just need to persist to disk.
-            // We need `fs` import.
-
-            // Wait, "Save" implies writing to disk.
-            // I need to import `fs` here.
             await import("$lib/fs").then(async ({ fs }) => {
                 await fs.writeFile(file.path, content);
                 actions.markFileSaved(modalTargetIndex!); // Mark clean
@@ -55,6 +54,9 @@
 
             showModal = false;
             modalTargetIndex = null;
+        } else {
+            // Info Modal Action (OK)
+            showModal = false;
         }
     }
 
@@ -137,6 +139,156 @@
     function toggleSidebar() {
         actions.toggleSidebar();
     }
+
+    // Share Menu State
+    let shareMenuVisible = false;
+    let shareMenuX = 0;
+    let shareMenuY = 0;
+
+    function toggleShareMenu(e: MouseEvent) {
+        e.stopPropagation(); // Prevent global click listener from closing it immediately
+        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        shareMenuY = rect.bottom + 5; // Below button
+
+        // Check if menu would overflow right edge (assuming ~200px width)
+        const MENU_WIDTH = 200;
+        if (rect.left + MENU_WIDTH > window.innerWidth) {
+            shareMenuX = rect.right - MENU_WIDTH;
+        } else {
+            shareMenuX = rect.left;
+        }
+
+        shareMenuVisible = !shareMenuVisible;
+    }
+
+    async function handleShareAction(e: CustomEvent<string>) {
+        const action = e.detail;
+        const index = $workspaceStore.activeFileIndex;
+        if (index === -1) return;
+        const content = $workspaceStore.openFiles[index].content;
+
+        switch (action) {
+            case "copyMarkdown":
+                try {
+                    await navigator.clipboard.writeText(content);
+                } catch (err) {
+                    console.error("Failed to copy", err);
+                }
+                break;
+            case "copyHTML":
+                try {
+                    const html = await marked.parse(content);
+                    await navigator.clipboard.writeText(html);
+                } catch (err) {
+                    console.error("Failed to copy HTML", err);
+                }
+                break;
+            case "exportPDF":
+                // 1. Render Markdown to HTML
+                const pdfHtml = await marked.parse(content);
+
+                // 2. Wrap via html2pdf
+                // We need to dynamically import html2pdf because it's client-side only and might have issues during SSR import if not careful (though we are in extensive client-side logic).
+                // It's safer to import inside the function or use the global if loaded via script, but npm module works.
+                // Note: html2pdf.js is often imported as: import html2pdf from 'html2pdf.js';
+                // But TypeScript might need `const html2pdf = (await import('html2pdf.js')).default;`
+
+                try {
+                    const html2pdf = (await import("html2pdf.js")).default;
+
+                    // Create a container with styles for the PDF generation
+                    const element = document.createElement("div");
+                    element.innerHTML = `
+                        <style>
+                            .pdf-content { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; line-height: 1.6; color: #333; }
+                            .pdf-content h1, .pdf-content h2, .pdf-content h3 { color: #111; margin-top: 1.5em; margin-bottom: 0.5em; }
+                            .pdf-content h1 { border-bottom: 1px solid #eaeaea; padding-bottom: 0.3em; }
+                            .pdf-content code { background: #f6f8fa; padding: 0.2em 0.4em; border-radius: 3px; font-family: monospace; }
+                            .pdf-content pre { background: #f6f8fa; padding: 16px; border-radius: 6px; overflow: auto; }
+                            .pdf-content blockquote { border-left: 4px solid #dfe2e5; color: #6a737d; padding-left: 1em; margin: 0; }
+                            .pdf-content table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+                            .pdf-content th, .pdf-content td { border: 1px solid #dfe2e5; padding: 6px 13px; }
+                            .pdf-content img { max-width: 100%; }
+                        </style>
+                        <div class="pdf-content">
+                            ${pdfHtml}
+                        </div>
+                    `;
+
+                    // Apply styles inline or via class? html2pdf takes a snapshot.
+                    // Best to style the element directly.
+                    element.style.fontFamily = "Arial, sans-serif";
+                    element.style.lineHeight = "1.6";
+                    element.style.color = "#333";
+                    element.style.padding = "20px";
+                    element.style.background = "white";
+
+                    // Specific GitHub-like styles for children
+                    // This is harder to apply via inline styles on a wrapper...
+                    // Let's use simple CSS text injection if html2pdf supports it?
+                    // Actually html2pdf renders the DOM element. We can append it to body (hidden), render, then remove.
+
+                    element.style.width = "800px"; // Fixed width for PDF consistency
+                    // element.style.display = 'none'; // html2pdf needs it visible? mostly no, but safer to be off-screen.
+                    // html2pdf can render off-screen elements? usually.
+
+                    const opt = {
+                        margin: 10, // mm
+                        filename: `${$workspaceStore.openFiles[index].name.replace(/\.md$/, "")}.pdf`,
+                        image: { type: "jpeg" as const, quality: 0.98 },
+                        html2canvas: { scale: 2 },
+                        jsPDF: {
+                            unit: "mm",
+                            format: "a4",
+                            orientation: "portrait" as const,
+                        },
+                    };
+
+                    await html2pdf().set(opt).from(element).save();
+                    showInfo(
+                        "Export Successful",
+                        "PDF file has been saved to your downloads.",
+                    );
+                } catch (e) {
+                    console.error("PDF Export Failed", e);
+                    showInfo("Export Failed", "Could not generate PDF.");
+                }
+                break;
+            case "exportDOCX":
+                const htmlContent = await marked.parse(content);
+                const blob = new Blob(
+                    [
+                        "<!DOCTYPE html><html><body>" +
+                            htmlContent +
+                            "</body></html>",
+                    ],
+                    { type: "application/msword" },
+                );
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `${$workspaceStore.openFiles[index].name.replace(/\.md$/, "")}.doc`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                showInfo(
+                    "Export Successful",
+                    "DOCX file has been saved to your downloads.",
+                );
+                break;
+        }
+    }
+
+    function showInfo(title: string, message: string) {
+        modalTitle = title;
+        modalMessage = message;
+        modalPrimaryAction = "OK";
+        modalExtraAction = "";
+        modalTargetIndex = null;
+        showModal = true;
+    }
 </script>
 
 <div class="tab-bar" role="list">
@@ -181,17 +333,22 @@
     </div>
 
     <!-- Toggle Button fixed to right -->
-    <button
-        class="toggle-btn"
-        on:click={toggleLivePreview}
-        title="Toggle Live Preview"
-    >
-        {#if $workspaceStore.livePreviewEnabled}
-            <Eye size={18} />
-        {:else}
-            <FileText size={18} />
-        {/if}
-    </button>
+    <div style="display: flex;">
+        <button class="toggle-btn" on:click={toggleShareMenu} title="Share">
+            <Share2 size={16} />
+        </button>
+        <button
+            class="toggle-btn"
+            on:click={toggleLivePreview}
+            title="Toggle Live Preview"
+        >
+            {#if $workspaceStore.livePreviewEnabled}
+                <Eye size={18} />
+            {:else}
+                <FileText size={18} />
+            {/if}
+        </button>
+    </div>
 </div>
 
 <ContextMenu
@@ -200,6 +357,14 @@
     visible={menuVisible}
     items={menuItems}
     onClose={() => (menuVisible = false)}
+/>
+
+<ShareMenu
+    x={shareMenuX}
+    y={shareMenuY}
+    visible={shareMenuVisible}
+    on:close={() => (shareMenuVisible = false)}
+    on:action={handleShareAction}
 />
 
 <Modal
