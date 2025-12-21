@@ -26,7 +26,7 @@ export const DEFAULT_CONFIG: WorkspaceConfig = {
     theme: {
         fontSize: 14,
         lineHeight: 1.5,
-        colorScheme: 'light',
+        colorScheme: 'dark', // Default to Dark as per request
         accentColor: '#e5a84b', // Amber default
         interfaceFont: 'Inter'
     },
