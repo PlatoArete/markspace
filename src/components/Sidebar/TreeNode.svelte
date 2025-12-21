@@ -79,10 +79,11 @@
             </div>
         {:else}
             {#each children as child}
-                entry={child}
-                depth={depth + 1}
-                on:open={handleOpen}
-                on:contextmenu={handleChildContextMenu}
+                <svelte:self
+                    entry={child}
+                    depth={depth + 1}
+                    on:open={handleOpen}
+                    on:contextmenu={handleChildContextMenu}
                 />
             {/each}
         {/if}
