@@ -172,12 +172,6 @@
       if (file) {
         // Check if virtual file
         if (file.path.startsWith("Untitled-")) {
-          // Redirect to Save As
-          // We need to call handleSaveAs but it relies on active index.
-          // If the autosave triggers for a non-active file (rare but possible), we might have issues.
-          // But here saveContent is triggered by Ctrl+S on ACTIVE file primarily or debouncer?
-          // Actually saveContent is called by Ctrl+S manually now.
-          // So file is likely active.
           if (index === $workspaceStore.activeFileIndex) {
             await handleSaveAs();
           } else {
@@ -198,15 +192,76 @@
           saveStatus = `Error: ${e.message || e}`;
         }
       }
-    }, 100); // Reduced delay for explicit save
+    }, 100);
+  }
+
+  // Sidebar Resizing Logic
+  let isResizing = false;
+
+  function startResize() {
+    isResizing = true;
+    // Prevent text selection during resize
+    document.body.style.userSelect = "none";
+    document.body.style.cursor = "col-resize";
+  }
+
+  function stopResize() {
+    if (isResizing) {
+      isResizing = false;
+      document.body.style.userSelect = "";
+      document.body.style.cursor = "";
+    }
+  }
+
+  function handleResize(e: MouseEvent) {
+    if (!isResizing) return;
+
+    let newWidth = e.clientX;
+    const SNAP_THRESHOLD = 50; // px
+    const MIN_WIDTH = 150;
+    const MAX_WIDTH = 800; // reasonable max
+
+    // Snap to close
+    if (newWidth < SNAP_THRESHOLD) {
+      if ($workspaceStore.sidebarVisible) {
+        actions.setSidebarVisible(false);
+      }
+      // We don't update width when snapped closed, or maybe we set it to min for next open?
+      // Let's keep width somewhat valid.
+      return;
+    }
+
+    // Auto-show if dragged out
+    if (!$workspaceStore.sidebarVisible && newWidth > SNAP_THRESHOLD) {
+      actions.setSidebarVisible(true);
+    }
+
+    // Clamp width
+    if (newWidth < MIN_WIDTH) newWidth = MIN_WIDTH;
+    if (newWidth > MAX_WIDTH) newWidth = MAX_WIDTH;
+
+    actions.setSidebarWidth(newWidth);
   }
 </script>
+
+<svelte:window
+  on:keydown={handleKeydown}
+  on:mousemove={handleResize}
+  on:mouseup={stopResize}
+/>
 
 <div class="app-container">
   <Sidebar
     width={$workspaceStore.sidebarWidth}
     visible={$workspaceStore.sidebarVisible}
   />
+
+  <!-- svelte-ignore a11y-no-static-element-interactions -->
+  <div
+    class="resizer"
+    on:mousedown={startResize}
+    class:hidden={!$workspaceStore.sidebarVisible}
+  ></div>
 
   <div class="main-area">
     <TabBar />
@@ -250,8 +305,6 @@
   />
 </div>
 
-<svelte:window on:keydown={handleKeydown} />
-
 <style>
   .status-bar {
     height: 22px;
@@ -290,5 +343,19 @@
     justify-content: center;
     height: 100%;
     color: var(--text-secondary);
+  }
+  .resizer {
+    width: 4px;
+    cursor: col-resize;
+    background: var(--border);
+    transition: background 0.2s;
+    z-index: 10;
+  }
+  .resizer:hover,
+  .resizer:active {
+    background: var(--accent);
+  }
+  .resizer.hidden {
+    display: none;
   }
 </style>

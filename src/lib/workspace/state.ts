@@ -47,6 +47,7 @@ export interface WorkspaceState {
     closeOtherFiles: (keepIndex: number) => void;
     moveOpenFiles: (fromIndex: number, toIndex: number) => void;
     toggleLivePreview: () => void;
+    toggleSidebar: () => void;
     setFiles: (files: OpenFile[]) => void;
 }
 
@@ -175,6 +176,8 @@ const startStore = createStore<WorkspaceState>((set) => ({
     }),
 
     toggleLivePreview: () => set((state) => ({ livePreviewEnabled: !state.livePreviewEnabled })),
+
+    toggleSidebar: () => set((state) => ({ sidebarVisible: !state.sidebarVisible })),
 }));
 
 export const workspaceStore = toSvelteStore(startStore);

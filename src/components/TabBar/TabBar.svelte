@@ -132,9 +132,22 @@
     function toggleLivePreview() {
         actions.toggleLivePreview();
     }
+
+    function toggleSidebar() {
+        actions.toggleSidebar();
+    }
 </script>
 
 <div class="tab-bar" role="list">
+    <!-- Toggle Sidebar (Left) -->
+    <button
+        class="toggle-btn left-btn"
+        on:click={toggleSidebar}
+        title="Toggle Sidebar"
+    >
+        {$workspaceStore.sidebarVisible ? "◀" : "▶"}
+    </button>
+
     <!-- Scrolled container for tabs -->
     <div
         class="tabs-scroll"
@@ -234,6 +247,10 @@
         opacity: 0.7;
         transition: opacity 0.2s;
         border-left: 1px solid var(--border);
+    }
+    .left-btn {
+        border-left: none;
+        border-right: 1px solid var(--border);
     }
     .toggle-btn:hover {
         opacity: 1;
