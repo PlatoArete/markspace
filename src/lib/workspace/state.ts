@@ -42,6 +42,7 @@ export interface WorkspaceState {
     setSidebarWidth: (width: number) => void;
     markFileSaved: (index: number) => void;
     renameOpenFile: (oldPath: string, newPath: string, newName: string) => void;
+    renameDirectory: (oldPath: string, newPath: string) => void;
     closeFileByPath: (path: string) => void;
     closeAllFiles: () => void;
     closeOtherFiles: (keepIndex: number) => void;
@@ -137,6 +138,28 @@ const startStore = createStore<WorkspaceState>((set) => ({
         const files = state.openFiles.map(f => {
             if (f.path === oldPath) {
                 return { ...f, path: newPath, name: newName };
+            }
+            return f;
+        });
+        return { openFiles: files };
+    }),
+
+    renameDirectory: (oldPath, newPath) => set((state) => {
+        const files = state.openFiles.map(f => {
+            if (f.path.startsWith(oldPath)) {
+                // Check for separator to ensure it's actually a parent directory
+                // or just exact match (though exact match is file rename)
+                // e.g. /foo vs /foobar
+                const sep = oldPath.endsWith('/') || oldPath.endsWith('\\') ? '' : '/';
+                // However, we just know it startsWith.
+                // We should be careful. 
+                // Simple logic: if f.path starts with oldPath + separator OR f.path IS oldPath (unlikely for file inside dir)
+                // Actually, just replace the prefix.
+                // We trust the operation context.
+                if (f.path === oldPath || f.path.startsWith(oldPath + '/') || f.path.startsWith(oldPath + '\\')) {
+                    const suffix = f.path.slice(oldPath.length);
+                    return { ...f, path: newPath + suffix };
+                }
             }
             return f;
         });

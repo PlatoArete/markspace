@@ -12,6 +12,8 @@
     import Modal from "../UI/Modal.svelte";
     import ShareMenu from "../ShareMenu/ShareMenu.svelte";
     import { marked } from "marked";
+    import DOMPurify from "dompurify";
+    import { notifications } from "$lib/utils/notifications";
 
     let menuVisible = false;
     let menuX = 0;
@@ -177,7 +179,9 @@
                 break;
             case "copyHTML":
                 try {
-                    const html = await marked.parse(content);
+                    const html = DOMPurify.sanitize(
+                        await marked.parse(content),
+                    );
                     await navigator.clipboard.writeText(html);
                 } catch (err) {
                     console.error("Failed to copy HTML", err);
@@ -185,7 +189,7 @@
                 break;
             case "exportPDF":
                 // 1. Render Markdown to HTML
-                const pdfHtml = await marked.parse(content);
+                const pdfHtml = DOMPurify.sanitize(await marked.parse(content));
 
                 // 2. Wrap via html2pdf
                 // We need to dynamically import html2pdf because it's client-side only and might have issues during SSR import if not careful (though we are in extensive client-side logic).
@@ -245,49 +249,21 @@
                     };
 
                     await html2pdf().set(opt).from(element).save();
-                    showInfo(
-                        "Export Successful",
+                    notifications.success(
                         "PDF file has been saved to your downloads.",
                     );
                 } catch (e) {
                     console.error("PDF Export Failed", e);
-                    showInfo("Export Failed", "Could not generate PDF.");
+                    notifications.error("Could not generate PDF.");
                 }
-                break;
-            case "exportDOCX":
-                const htmlContent = await marked.parse(content);
-                const blob = new Blob(
-                    [
-                        "<!DOCTYPE html><html><body>" +
-                            htmlContent +
-                            "</body></html>",
-                    ],
-                    { type: "application/msword" },
-                );
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = `${$workspaceStore.openFiles[index].name.replace(/\.md$/, "")}.doc`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-
-                showInfo(
-                    "Export Successful",
-                    "DOCX file has been saved to your downloads.",
-                );
                 break;
         }
     }
 
     function showInfo(title: string, message: string) {
-        modalTitle = title;
-        modalMessage = message;
-        modalPrimaryAction = "OK";
-        modalExtraAction = "";
-        modalTargetIndex = null;
-        showModal = true;
+        // Legacy support or remove if unused.
+        // We use notifications now.
+        notifications.info(message);
     }
 </script>
 

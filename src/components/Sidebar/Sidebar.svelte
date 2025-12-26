@@ -173,11 +173,10 @@
                     // Sync Tabs
                     if (entry.type === "file") {
                         actions.renameOpenFile(entry.path, newPath, value);
+                    } else {
+                        // Directory Rename
+                        actions.renameDirectory(entry.path, newPath);
                     }
-                    // If directory, we technically need to update all child tabs.
-                    // MVP: Close them? Or Rename them?
-                    // TODO: Recursively update paths for directory rename.
-                    // For now, let's just handle single file rename perfectly.
 
                     refreshTree();
                 }

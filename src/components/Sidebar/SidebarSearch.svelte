@@ -241,9 +241,6 @@
         padding: 0 0 10px 0;
     }
 
-    .file-group {
-        /* border-bottom: 1px solid var(--border); */
-    }
     .file-header {
         padding: 4px 10px;
         background: rgba(128, 128, 128, 0.05);

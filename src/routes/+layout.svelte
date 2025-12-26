@@ -3,6 +3,7 @@
     import { onMount, onDestroy } from "svelte";
     import { getCurrentWindow } from "@tauri-apps/api/window";
     import { PhysicalSize, PhysicalPosition } from "@tauri-apps/api/dpi";
+    import ToastContainer from "../components/UI/Toast.svelte";
 
     const STORAGE_KEY = "markspace-window-state";
 
@@ -96,3 +97,4 @@
 </script>
 
 <slot />
+<ToastContainer />

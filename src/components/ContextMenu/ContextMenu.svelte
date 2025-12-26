@@ -38,6 +38,8 @@
 {#if visible}
     <div
         class="context-menu"
+        role="menu"
+        tabindex="-1"
         style="top: {y}px; left: {x}px;"
         bind:this={menuElement}
         on:contextmenu|preventDefault

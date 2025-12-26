@@ -1,13 +1,6 @@
 <script lang="ts">
     import { createEventDispatcher, onMount } from "svelte";
-    import {
-        Settings,
-        FileText,
-        Code,
-        FileJson,
-        Printer,
-        FileType,
-    } from "lucide-svelte"; // Icons
+    import { Settings, FileText, Code, FileJson, Printer } from "lucide-svelte"; // Icons
 
     export let visible = false;
     export let x = 0;
@@ -48,10 +41,7 @@
             <Printer size={16} />
             <span>Export to PDF</span>
         </button>
-        <button class="menu-item" on:click={() => handleAction("exportDOCX")}>
-            <FileType size={16} />
-            <span>Export to DOCX</span>
-        </button>
+
         <!-- Future: User Targets -->
     </div>
 {/if}
